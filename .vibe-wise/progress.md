@@ -1,0 +1,13 @@
+# Learning Progress
+
+## Boardroom overview
+- Introduced (AI explained): ink-colour convention (black = C source, blue = stdin), the compile-and-run sandbox (docs section 6), architecture and stack, local setup.
+- Demonstrated understanding: why handwriting OCR output needs teacher confirmation before running (OCR errors, messy handwriting, hallucinated code, silently "fixing" intentional mistakes).
+- Introduced (AI explained): Docker/images/VM-on-Windows, Excalidraw as a React library, JSX, Vite, Node.js, runner.py, capture.js flow.
+- Learner's design (chosen): layout C; selected region becomes the frame the program is taken from; compiler errors shown on the editable version of the code that ran, whiteboard left unmarked; errors in template lines are fixed by editing that version. AI-proposed additions approved: dock tabs, no new editor library, editor decoupled from board with an "edited" badge, template in localStorage.
+- Implemented on branch anand-changes (not committed): layout C, region select, whole page, snippet mode, editable code view with squiggles. Verified by hand in the in-app browser, 17 JS unit tests, and the full Playwright suite (26 passing, Docker running).
+- Learner's design (chosen, round 2): layout B (board first), no floating elements on the board except pen tool bars, declutter with AI free to place things. Implemented on anand-changes after merging main (f32fdaf): docked tool strip, side panel, region via main's frame tool plus Whole page. 40 Playwright tests pass.
+- Learner's design (chosen, round 3): code-mode slider Full program / Snippet / Algorithm; Gemini only for handwriting and Algorithm; optional "Ask Gemini to fix" button after any failed run; custom drawing bar (Pen, Eraser, Hand, Select, Lock, Text, Shapes popover, Laser, Image), stroke widths, dark mode. Implemented and pushed (1cdaf4d).
+- Learner's spec (round 4): Snippet template without main(); Gemini organizes snippet structure before every C++ snippet compile, never fixes code; favicon. Implemented and pushed (9af898e), merged into main by teammates (6f120a6).
+- Full non-Gemini test pass on 6f120a6 (2026-10-18): open bugs reported, not fixed: Image tool opens no picker; Code pen dot invisible in dark mode; Escape after typing text closes the drawing bar; C-only code fails because the language is now C++17; <climits> rejected; fork loop crashes LeakSanitizer; OOM kill gives no message; snippet template hidden on an empty board.
+- Needs reinforcement: Vite's dev-server/proxy role, why Docker sandboxing is needed for untrusted code (asked follow-ups).
