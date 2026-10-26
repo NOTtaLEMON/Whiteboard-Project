@@ -78,16 +78,16 @@ The API forwards Python requests to the same isolated Docker runner locally and 
 
 ## 5. OCR and teacher review
 
-`server/ocr.mjs` calls Gemini's Interactions REST endpoint using the backend-only `GEMINI_API_KEY`. `OCR_MODEL` can override the default model. The request asks for structured JSON containing separate `code` and `stdin` arrays. Each line contains:
+`server/ocr.mjs` forwards the code and stdin PNG crops to the local `ocr-service/` (`POST /ocr`, default `http://127.0.0.1:8788`, override with `OCR_SERVICE_URL`). The service runs a **pretrained vision-language model** (`Qwen/Qwen2-VL-2B-Instruct`, on CPU by default) on each whole crop with a prompt that demands a literal, one-line-per-written-line transcription that preserves indentation and symbols and never repairs code. The text is split into lines; a line is `uncertain` when its least-confident token is below `OCR_UNCERTAIN_BELOW` (0.5). Each line contains:
 
 | Field | Meaning |
 | --- | --- |
-| `text` | The transcribed line, preserving indentation and visible mistakes |
-| `box` | Approximate line bounds as `[y_min, x_min, y_max, x_max]`, normalized to 0–1000 |
-| `uncertain` | A model-reported ambiguity flag |
-| `alternatives` | Up to three alternative readings of the same line |
+| `text` | The transcribed line, with indentation as written |
+| `box` | `null` (the local model supplies no geometry) |
+| `uncertain` | True when the model's least-confident token is below the threshold |
+| `alternatives` | Always empty |
 
-The prompt explicitly forbids adding missing headers, `main()`, ampersands, semicolons, braces, or inferred statements. This matters because silently repairing a teacher's mistake would defeat the verifier's purpose. The prompt cannot guarantee faithful transcription, so review is mandatory.
+The API waits up to `OCR_TIMEOUT_MS` for the model (default 180 s locally, 50 s on Vercel). The model is instructed to transcribe what it sees and never insert missing headers, `main()`, ampersands or semicolons, so the teacher's mistakes stay visible. Faithful transcription is not guaranteed, so review is mandatory.
 
 `src/HandwritingPanel.jsx` presents the captured image and editable lines. Teachers can correct text, inspect alternate readings, and insert or remove lines. They must acknowledge checking both code and input, then select **Use confirmed code**. A separate **Verify & run** action submits that text for execution.
 
@@ -95,7 +95,7 @@ Recognition and execution are independent endpoints. Reading handwriting or conf
 
 Ambiguity flags are not calibrated confidence scores. Line boxes are model estimates, so handwriting diagnostics identify approximate board regions. The adapter validates text sizes, line counts, coordinate ranges, and response completeness. It requests `store: false`; account-level provider data handling still follows Gemini's applicable terms.
 
-The researched alternatives—Cloud Vision, Mistral OCR, MyScript, PaddleOCR, TrOCR, and OpenAI vision—are compared in [OCR options](ocr-options.md). Gemini is the implemented provider; no multi-provider routing or accuracy ranking is implemented.
+The researched alternatives—Cloud Vision, Mistral OCR, MyScript, PaddleOCR, TrOCR (tried, then replaced), and OpenAI vision—are compared in [OCR options](ocr-options.md). Gemini is the implemented provider; no multi-provider routing or accuracy ranking is implemented.
 
 ## 6. Compilation and execution
 

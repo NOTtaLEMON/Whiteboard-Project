@@ -2,9 +2,19 @@
 
 ## Decision
 
-Implement Gemini as the first provider, with a required teacher review step. This is a practical integration choice, not a claim that Gemini is the most accurate OCR system for handwritten C. No provider has yet been benchmarked on this project's real classroom handwriting.
+Handwriting is read by a **pretrained vision-language model, Qwen2-VL 2B Instruct, running locally** in `ocr-service/`, with a required teacher review step. This follows the course guidance to use a pretrained model instead of sending handwriting to a hosted API. Gemini was removed from OCR and remains only for optional pseudocode help.
 
-Gemini accepts images and schema-constrained output. The current request asks for source/input line text and ambiguity flags only, with `thinking_level: "low"`. Earlier requests also asked for alternate readings and approximate line boxes; these are omitted to reduce work and output size. The backend uses its [documented Interactions REST API](https://ai.google.dev/gemini-api/docs/interactions) and [structured output format](https://ai.google.dev/gemini-api/docs/structured-output). `OCR_MODEL` is configurable; the default is `gemini-3.6-flash`, the supported replacement for the deprecated `gemini-3.5-flash` alias. Model availability and quotas depend on the user's project.
+How it works: the whole board crop is sent to the model with a fixed prompt (transcribe literally, one output line per written line, preserve indentation and symbols, never repair or complete code). The text is split into lines, and a line is flagged uncertain when its least-confident token falls below 0.5. See [ocr-service/README.md](../ocr-service/README.md).
+
+### What we tried first
+
+| Model | Result on the same hand-drawn sample |
+| --- | --- |
+| [TrOCR base handwritten](https://huggingface.co/microsoft/trocr-base-handwritten) (line-level, with our own line splitting) | Unusable: `#include<iostream>` became `7in close , by no stream ?`, `return 0;` became `gretman 0 ;`, and two lines were dropped by the splitter. It is trained on English prose, not code. |
+| **Qwen2-VL 2B Instruct** (whole image) | Exact: `#include <iostream>`, `int main() {`, `cout << "10";`, `return 0;`, `}`, with indentation, and without adding `using namespace std`. About 28 seconds on a laptop CPU. |
+| [mltu IAM tutorial](https://github.com/pythonlessons/mltu/tree/main/Tutorials/03_handwriting_recognition) (not tried) | Word-level CRNN trained from scratch on English IAM words (about 6% character error rate there); would need word segmentation and fine-tuning on code. |
+
+This is one sample, not a benchmark. Touching lines, messy handwriting and teacher correction time still need classroom evaluation.
 
 ## Options researched
 

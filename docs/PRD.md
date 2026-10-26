@@ -17,7 +17,7 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 
 1. Let a teacher run what is on the board without leaving the board.
 2. Show real compiler, runtime and memory-safety feedback linked to the code.
-3. Use AI for handwriting only, with the teacher confirming every transcription.
+3. Use a pretrained vision-language model (Qwen2-VL, run locally) for handwriting only, with the teacher confirming every transcription.
 4. Preserve every lesson as a reproducible, versioned record.
 
 **Non-goals**
@@ -40,7 +40,7 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 |---|---|---|---|
 | U1 | As a teacher, I write code on a canvas and run it | Selecting a frame extracts source; Run returns real stdout/stderr | Done |
 | U2 | I supply input by writing in blue | Blue ink becomes stdin; other colours are ignored | Done |
-| U3 | I write by hand and the app reads it | Gemini returns editable lines; Run is blocked until both code and input are confirmed | Done |
+| U3 | I write by hand and the app reads it | The local Qwen2-VL model returns editable lines; Run is blocked until both code and input are confirmed | Done |
 | U4 | I see errors where they happened | Compiler/ASan/UBSan diagnostics map to source lines; clicking focuses the board when a location exists | Done |
 | U5 | I choose C++17 or Python | Language toggle applies to execution, OCR prompts and snapshots | Done |
 | U6 | I run several inputs | Up to 20 cases with expected status/output, progress and first-mismatch report | Done |
@@ -56,7 +56,7 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 |---|---|
 | Canvas | Excalidraw whiteboard, frames, fullscreen, resizable side panel |
 | Extraction | Typed text read literally with blank lines and a line-to-element map; handwriting exported as separate code and stdin PNGs (max 2048 x 2048) |
-| OCR | Structured lines with uncertainty flags and alternate readings; must not repair mistakes; teacher confirmation mandatory |
+| OCR | Structured lines with uncertainty flags from a pretrained local model (Qwen2-VL); must not repair mistakes; teacher confirmation mandatory |
 | Execution | g++ C++17 with `-fsanitize=address,undefined`, or Python 3, inside an isolated container |
 | Limits | 32 KiB source, 8 KiB stdin, 10 s compile, 5 s run, 16 KiB output |
 | Archive | Git commit per run, local or GitHub-backed, non-force pushes, retry sync |
@@ -67,7 +67,7 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 | Category | Requirement |
 |---|---|
 | **Security** | No network in the sandbox; read-only filesystem; dropped capabilities; non-root user; memory/CPU/process caps; secrets server-side only (see README section 7) |
-| **Privacy** | No accounts or database; boards leave the browser only on OCR, run or snapshot; Gemini called with `store: false`; logs exclude images and transcriptions |
+| **Privacy** | No accounts or database; boards leave the browser only on OCR, run or snapshot; handwriting never sent to a third-party API; optional Gemini receives reviewed text only; logs exclude images and transcriptions |
 | **Performance** | Typed code returns a result within the 22 s outer limit; OCR bounded at 50 s |
 | **Reliability** | Outer timeout force-removes containers; snapshot Git failures keep files and warn |
 | **Usability** | Single-screen workflow; typed input as full alternative to handwriting; keyboard-resizable panel |
@@ -84,7 +84,7 @@ See the architecture diagram and deployment modes in [README section 5](../READM
 | OCR misreads handwriting | Mandatory review, alternates, scene fingerprint invalidation, typed fallback |
 | Model "fixes" teacher errors | Prompt forbids repairs; compilation uses the confirmed text only |
 | Malicious code | Container isolation and resource limits; public use needs added authentication and stronger isolation |
-| Gemini free-tier quota | Rate limit, safe quota error classification, typed fallback |
+| Pretrained model misreads handwriting | Mandatory review, uncertainty flags, typed fallback; benchmark on classroom samples next |
 | Hosted runner is third-party | Documented as weaker than Docker; Docker mode recommended for classrooms |
 | Public API abuse | Origin checks, body and rate limits; per-user auth listed as future work |
 
@@ -99,5 +99,5 @@ See the architecture diagram and deployment modes in [README section 5](../READM
 
 | Horizon | Items |
 |---|---|
-| **Next month** | Per-teacher accounts and shared rate limiting; stronger sandbox (gVisor/Firecracker); handwritten diagnostics with line boxes; plain C mode |
+| **Next month** | Fine-tune the OCR model on code handwriting; per-teacher accounts and shared rate limiting; stronger sandbox (gVisor/Firecracker); handwritten diagnostics with line boxes; plain C mode |
 | **Later** | Student view and shared live sessions; more languages (Java); library versioning; teacher analytics on common errors |

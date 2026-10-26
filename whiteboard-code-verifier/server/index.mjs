@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { sandboxHealth, runSandbox } from './sandbox.mjs';
 import { hostedRunnerHealth, runHostedProgram } from './hosted-runner.mjs';
-import { loadOcrEnvironment, ocrConfiguration, recognizeHandwriting, OCR_BODY_LIMIT } from './ocr.mjs';
+import { loadOcrEnvironment, ocrConfiguration, geminiConfiguration, recognizeHandwriting, OCR_BODY_LIMIT } from './ocr.mjs';
 import { libraries } from '../src/libraries.js';
 import { createSnapshotStore, SNAPSHOT_BODY_LIMIT } from './snapshots.mjs';
 import { assistPseudocode, PSEUDOCODE_BODY_LIMIT } from './pseudocode.mjs';
@@ -65,7 +65,7 @@ async function defaultRun(payload) {
 }
 
 export function createHandler({ run = defaultRun, health = defaultHealth, now = Date.now,
-  recognize = recognizeHandwriting, assist = assistPseudocode, ocrHealth = ocrConfiguration, snapshots = createSnapshotStore(),
+  recognize = recognizeHandwriting, assist = assistPseudocode, ocrHealth = ocrConfiguration, geminiHealth = geminiConfiguration, snapshots = createSnapshotStore(),
   appOrigin = process.env.BOARDROOM_APP_ORIGIN, apiHost = process.env.BOARDROOM_API_HOST } = {}) {
   let active = 0;
   let activeOcr = 0;
@@ -113,7 +113,7 @@ export function createHandler({ run = defaultRun, health = defaultHealth, now = 
       if (pathname === '/api/health' && req.method === 'GET') {
         const language = new URL(req.url, 'http://localhost').searchParams.get('language') ?? 'c';
         if (!validLanguage(language)) return send(res, 400, { error: 'Choose C++ or Python.' });
-        return send(res, 200, { service: 'whiteboard-code-verifier', access: 'public', runner: await health(language), ocr: ocrHealth() });
+        return send(res, 200, { service: 'whiteboard-code-verifier', access: 'public', runner: await health(language), ocr: ocrHealth(), gemini: geminiHealth() });
       }
       if (pathname === '/api/snapshots/sync' && req.method === 'GET') return send(res, 200, await snapshots.syncStatus());
       if (pathname === '/api/snapshots/sync' && req.method === 'POST') {
@@ -138,9 +138,9 @@ export function createHandler({ run = defaultRun, health = defaultHealth, now = 
       }
       if (['/api/ocr', '/api/pseudocode'].includes(pathname) && req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) return send(res, 415, { error: 'Use application/json.' });
-        if (activeOcr >= 1) return send(res, 429, { error: 'A Gemini request is already running. Try again shortly.' });
+        if (activeOcr >= 1) return send(res, 429, { error: 'An OCR or AI request is already running. Try again shortly.' });
         if (now() - ocrRate.start >= 60_000) ocrRate = { start: now(), count: 0 };
-        if (ocrRate.count >= 6) return send(res, 429, { error: 'Gemini request limit reached. Try again in a minute.' });
+        if (ocrRate.count >= 6) return send(res, 429, { error: 'OCR/AI request limit reached. Try again in a minute.' });
         activeOcr += 1;
         ocrRate.count += 1;
         try {

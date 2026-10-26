@@ -91,6 +91,7 @@ function App() {
   const [tab, setTab] = useState('output');
   const [health, setHealth] = useState(null);
   const [ocrHealth, setOcrHealth] = useState(null);
+  const [geminiHealth, setGeminiHealth] = useState(null);
   const [snapshotAvailable, setSnapshotAvailable] = useState(false);
   const [snapshotMessage, setSnapshotMessage] = useState('Connect the API to check lesson storage.');
 
@@ -186,6 +187,7 @@ function App() {
       setSnapshotMessage(data.snapshots?.message ?? 'Lesson history is unavailable. You can download this board from the top bar.');
       setHealth(data.runner);
       setOcrHealth(data.ocr);
+      setGeminiHealth(data.gemini ?? { available: false, message: 'Gemini is not configured on this API host.' });
     } catch (caught) {
       if (requestId !== healthRequest.current || currentLanguage.current !== language) return;
       const local = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
@@ -194,6 +196,7 @@ function App() {
       setSnapshotAvailable(false);
       setHealth({ available: false, message });
       setOcrHealth({ available: false, message });
+      setGeminiHealth({ available: false, message });
     }
   }, [language]);
   useEffect(() => { checkHealth(); }, [checkHealth]);
@@ -383,7 +386,7 @@ function App() {
   // Only on request: Gemini corrects the code that failed, and the corrected version is run.
   async function fixWithGemini() {
     if (!api || running || reading || !result || stale || result.status === 'success') return;
-    if (!ocrHealth?.available) { setError('Set GEMINI_API_KEY on the API host to use Gemini fixes.'); return; }
+    if (!geminiHealth?.available) { setError('Set GEMINI_API_KEY on the API host to use Gemini fixes.'); return; }
     const failed = result;
     setRunning(true); setError(''); setNotice(''); setGeminiDiagnostic(null); setPhase('gemini');
     try {
@@ -788,7 +791,7 @@ function App() {
   }
 
   const runLabel = reading ? 'Reading handwriting…' : running ? phase === 'structure' ? 'Gemini is organizing…' : phase === 'gemini' ? `Gemini is preparing ${languageLabel}…` : language === 'python' ? 'Checking & running…' : 'Compiling & running…' : hasInk && !recognizedProgram ? codeReviewCurrent ? 'Scan & review input' : 'Read & review handwriting' : pseudoLevel === 3 ? 'Generate & run' : 'Verify & run';
-  const runDisabled = running || reading || !api || !frameId || !(hasInk && !recognizedProgram ? ocrHealth?.available : health?.available) || ((pseudoLevel === 3 || (pseudoLevel === 2 && language === 'c')) && !ocrHealth?.available);
+  const runDisabled = running || reading || !api || !frameId || !(hasInk && !recognizedProgram ? ocrHealth?.available : health?.available) || ((pseudoLevel === 3 || (pseudoLevel === 2 && language === 'c')) && !geminiHealth?.available);
 
   function changeLanguage(next) {
     if (next === language || running || reading) return;
@@ -940,7 +943,7 @@ function App() {
               <button className="icon-button" aria-label="Close panel" title="Close panel" onClick={() => setPanelVisible(false)}>×</button>
             </div>
             {hasInk && <p className="handwriting-state">{recognizedProgram ? 'Handwriting reviewed. Ready to compile.' : 'Handwriting needs recognition and teacher confirmation.'}</p>}
-            {(pseudoLevel === 3 || (pseudoLevel === 2 && language === 'c')) && ocrHealth && !ocrHealth.available && <p className="runner-notice">Gemini is required in {pseudoLevel === 3 ? 'Algorithm' : 'Snippet'} mode. {ocrHealth.message}</p>}
+            {(pseudoLevel === 3 || (pseudoLevel === 2 && language === 'c')) && geminiHealth && !geminiHealth.available && <p className="runner-notice">Gemini is required in {pseudoLevel === 3 ? 'Algorithm' : 'Snippet'} mode. {geminiHealth.message}</p>}
             {health && !health.available && <div className="runner-notice"><span>{health.message}</span><button onClick={checkHealth}>Check again</button></div>}
             {error && geminiDiagnostic && <details className="raw-output"><summary>Gemini assistance diagnostics</summary><pre>{JSON.stringify(geminiDiagnostic, null, 2)}</pre><a href="https://aistudio.google.com/usage" target="_blank" rel="noreferrer">Check Gemini usage and limits</a></details>}
 
@@ -1005,8 +1008,8 @@ function App() {
                 {result && <div aria-live="polite"><div className={`result-status ${result.status === 'success' ? 'passed' : 'failed'}`}><span>{result.status === 'success' ? '✓' : '!'}</span><strong>{labels[result.status] ?? result.status}</strong><small>{result.durationMs} ms</small></div>
                   {result.status !== 'success' && !stale && <div className="fix-callout">
                     <p>{result.fixed ? 'The corrected version still has an issue.' : result.level === 2 && result.status === 'compile_error' && language === 'c' ? 'Template compile failed? Gemini can move templates, functions, classes, and structs to the correct scope and run the corrected program.' : 'Want Gemini to correct this and run the fixed version?'}</p>
-                    <button className="fix-button" onClick={fixWithGemini} disabled={busy || !ocrHealth?.available}
-                      title={ocrHealth?.available ? 'Gemini corrects the code and runs the corrected version. Your board is not changed.' : 'Set GEMINI_API_KEY to use Gemini fixes.'}><Icon name="sparkle" size={18} />Ask Gemini to fix</button>
+                    <button className="fix-button" onClick={fixWithGemini} disabled={busy || !geminiHealth?.available}
+                      title={geminiHealth?.available ? 'Gemini corrects the code and runs the corrected version. Your board is not changed.' : 'Set GEMINI_API_KEY to use Gemini fixes.'}><Icon name="sparkle" size={18} />Ask Gemini to fix</button>
                   </div>}
                   <div className="terminal"><div className="terminal-title"><span>STDOUT</span><span>exit {result.exitCode ?? '—'}</span></div><pre>{result.stdout || '(no output)'}</pre></div>
                   {language === 'c' && <MemoryDiagram stdout={result.stdout} />}

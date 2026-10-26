@@ -37,7 +37,7 @@ const HandwritingPanel = forwardRef(function HandwritingPanel({
     setAcknowledged(false);
     const abort = new AbortController();
     controller.current = abort;
-    const timeout = setTimeout(() => abort.abort(), 75_000);
+    const timeout = setTimeout(() => abort.abort(), 200_000);
     try {
       // Excalidraw mutates strokes in place. Freeze the image and its signature together.
       const snapshot = structuredClone(api.getSceneElements());
@@ -68,8 +68,8 @@ const HandwritingPanel = forwardRef(function HandwritingPanel({
       setSelected({ channel: mode === 'stdin' ? 'stdin' : 'code', index: 0 });
     } catch (caught) {
       if (caught.diagnostic) setDiagnostic(caught.diagnostic);
-      if (caught.name === 'AbortError') setDiagnostic({ provider: 'gemini', reason: 'browser_timeout', quotaStatus: 'unknown' });
-      setError(caught.name === 'AbortError' ? 'Handwriting recognition timed out. Gemini token/quota status is unknown. Nothing was executed.' : caught.message);
+      if (caught.name === 'AbortError') setDiagnostic({ provider: 'local-vlm', reason: 'browser_timeout' });
+      setError(caught.name === 'AbortError' ? 'Handwriting recognition timed out. Nothing was executed.' : caught.message);
     } finally {
       clearTimeout(timeout);
       inFlight.current = false;
@@ -103,15 +103,13 @@ const HandwritingPanel = forwardRef(function HandwritingPanel({
 
   return <section className="handwriting-panel" aria-label="Handwriting recognition and review">
     <h3>{scanMode === 'stdin' ? 'Scan input. Keep the code.' : 'Read the ink. Check the code.'}</h3>
-    <p className="panel-help">{scanMode === 'stdin' ? 'Scan input sends only blue input ink from this frame to Gemini. Review it before using it. Previously confirmed code is preserved.' : 'Read sends black and blue ink from this frame to Google Gemini. Review every line before compiling. Other annotation colors stay out of the images.'}</p>
+    <p className="panel-help">{scanMode === 'stdin' ? 'Scan input reads only blue input ink from this frame with the local handwriting model. Review it before using it. Previously confirmed code is preserved.' : 'Read runs a pretrained local vision model (Qwen2-VL) on black and blue ink from this frame; nothing leaves your machine. It can take up to a minute on a CPU. Review every line before compiling. Other annotation colors stay out of the images.'}</p>
     <button className="ocr-read-button" onClick={() => read(scanMode)} disabled={!api || !hasInk || !configuration?.available || busy}>{busy ? 'Reading handwriting…' : scanMode === 'stdin' ? 'Scan input again' : 'Read handwriting'}</button>
     {!configuration?.available && <div className="runner-notice">{configuration?.message ?? 'Checking OCR configuration…'}</div>}
     {!hasInk && <p className="panel-help">Write with “Pen: code” or “Pen: input”, then use “Select code & input” in the top bar and drag around your writing.</p>}
     {error && <div className="error-notice" role="alert">{error}</div>}
-    {error && diagnostic && <details className="raw-output"><summary>Gemini OCR diagnostics</summary>
+    {error && diagnostic && <details className="raw-output"><summary>Handwriting model diagnostics</summary>
       <pre>{JSON.stringify(diagnostic, null, 2)}</pre>
-      <p>Token usage logs describe individual requests; remaining account quota is not returned here.</p>
-      <a href="https://aistudio.google.com/usage" target="_blank" rel="noreferrer">Check Gemini usage and limits in AI Studio</a>
     </details>}
     {stale && <div className="stale-notice">The ink changed. Read the frame again before confirming.</div>}
     {draft && draft.frameId === frameId && <>

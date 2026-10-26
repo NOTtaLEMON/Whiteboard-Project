@@ -1,4 +1,4 @@
-import { ocrConfiguration } from './ocr.mjs';
+import { geminiConfiguration } from './ocr.mjs';
 import { readLimited, providerFailure, tokenUsage, parseApiKeys } from './gemini-response.mjs';
 import { libraries } from '../src/libraries.js';
 import { validLanguage } from '../src/languages.js';
@@ -113,7 +113,7 @@ export async function assistPseudocode(body, { env = process.env, fetchImpl = fe
   readHeader = (file) => readFile(new URL(`../runner/lib/${file}`, import.meta.url), 'utf8'),
   logger = (entry) => console.info('[pseudocode:gemini]', JSON.stringify(entry)) } = {}) {
   validatePseudocode(body);
-  const config = ocrConfiguration(env);
+  const config = geminiConfiguration(env);
   if (!config.available) throw fail(config.message, 503);
   const language = body.language ?? 'c';
   const mentioned = `${body.source}\n${body.templateContext ?? ''}`.toLowerCase();

@@ -3,3 +3,5 @@ node_modules/
 __pycache__/
 *.pyc
 .DS_Store
+.venv/
+whiteboard-code-verifier/ocr-service/service.log
