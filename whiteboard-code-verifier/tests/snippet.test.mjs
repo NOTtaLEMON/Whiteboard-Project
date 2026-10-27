@@ -41,10 +41,14 @@ test('returns the prepared program for teacher confirmation when the lines are k
   assert.equal(result.model, 'Qwen/test');
 });
 
-test('refuses to hand back a program the model changed', async () => {
-  await assert.rejects(prepareSnippet({ source: snippet }, { env, logger: () => {},
-    fetchImpl: reply({ source: wrapped.replace('a, b);', '&a, &b);') }) }),
-  (error) => error.status === 502 && error.code === 'ocr_snippet_changed' && /line 2/.test(error.message) && error.ocrDiagnostic.reason === 'changed_code');
+test('still returns a program the model changed, with a warning naming the line', async () => {
+  const changed = wrapped.replace('a, b);', '&a, &b);');
+  const result = await prepareSnippet({ source: snippet }, { env, logger: () => {}, fetchImpl: reply({ source: changed }) });
+  assert.equal(result.source, changed);
+  assert.match(result.warning, /line 2/);
+  assert.equal(result.requiresConfirmation, true);
+  const clean = await prepareSnippet({ source: snippet }, { env, logger: () => {}, fetchImpl: reply({ source: wrapped }) });
+  assert.equal(clean.warning, null);
 });
 
 test('reports an unreachable, failing, slow or malformed model', async () => {

@@ -68,12 +68,11 @@ export async function prepareSnippet(body, { env = process.env, fetchImpl = fetc
   if (typeof wrapped !== 'string' || !wrapped.trim() || Buffer.byteLength(wrapped) > MAX_SOURCE || wrapped.includes('\0')) {
     throw failure('The model did not return a usable program. Nothing was run.', 502, 'invalid_ocr_response', { reason: 'invalid_response', httpStatus: response.status });
   }
+  // The model may reformat or "fix" lines. That is not an error: the program is still returned, with a warning
+  // naming the first line that differs, so the teacher can see it before confirming.
   const kept = checkKeepsLines(source, wrapped);
-  if (!kept.ok) {
-    throw failure(`The model changed or dropped your line ${kept.line}: ${kept.text}. Nothing was run; try again or add the boilerplate yourself.`,
-      502, 'ocr_snippet_changed', { reason: 'changed_code', httpStatus: response.status, line: kept.line });
-  }
-  report('success', { httpStatus: response.status });
-  return { source: wrapped, provider: config.provider, model: data.model ?? config.model,
+  const warning = kept.ok ? null : `The model may have changed your line ${kept.line}: ${kept.text}. Compare it with what you wrote before you confirm.`;
+  report('success', { httpStatus: response.status, changedLine: kept.ok ? null : kept.line });
+  return { source: wrapped, warning, provider: config.provider, model: data.model ?? config.model,
     durationMs: Math.round(performance.now() - started), requiresConfirmation: true, language: 'c' };
 }

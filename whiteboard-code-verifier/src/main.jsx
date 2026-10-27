@@ -937,7 +937,7 @@ function App() {
                 </div>}
                 {currentDraft && <section className="snippet-review" aria-label="Prepared program">
                   <h3>Prepared program</h3>
-                  <p className="panel-help">The model added only the boilerplate. The app checked that each of your lines is still there, in order and unchanged, mistakes included. Read it, then confirm.</p>
+                  {currentDraft.warning ? <p className="error-notice" role="alert">{currentDraft.warning}</p> : <p className="panel-help">Each of your lines is still there, in order and unchanged. Read the program, then confirm.</p>}
                   <pre className="library-source" aria-label="Prepared C++ program">{currentDraft.source}</pre>
                   <div className="snippet-actions">
                     <button className="quiet-button" onClick={confirmSnippet} disabled={running || reading || !health?.available}>{currentDraft.confirmed ? 'Run again' : 'Confirm & run'}</button>

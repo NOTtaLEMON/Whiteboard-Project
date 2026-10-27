@@ -47,7 +47,7 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 | U8 | I learn what `malloc`/`free` did | Rule-based teaching notes appear for matching calls; comments and strings are ignored | Done |
 | U9 | I keep a record of every lesson | Each run creates a Git commit with board, source, input and replay bundle; History lists the latest 30 | Done |
 | U10 | I replay an old lesson | Frozen runner, vendored headers and SHA-256 manifest rebuild the run offline | Done |
-| U11 | I write only loose lines and the app adds the boilerplate | The model adds includes, main and return only; the app verifies each original line is kept in order and unchanged; the teacher confirms the prepared program before it runs | Done |
+| U11 | I write only loose lines and the app adds the boilerplate | The model adds includes, main and return only; the app warns when an original line was changed; the teacher confirms the prepared program before it runs | Done |
 
 ## 5. Functional requirements
 

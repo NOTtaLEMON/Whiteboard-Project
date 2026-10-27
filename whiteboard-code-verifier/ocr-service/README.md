@@ -9,7 +9,7 @@ Reads handwriting with a **pretrained vision-language model, [Qwen2-VL 2B Instru
 3. The output is split into lines. A line is flagged `uncertain` when its least-confident token has probability below `OCR_UNCERTAIN_BELOW` (default 0.5) or contains `?`.
 4. The API validates the answer and the teacher must still confirm it.
 
-The same model also serves `POST /wrap` for Snippet mode: it receives loose C++ lines and returns a complete program with only boilerplate added. The Node API (`server/snippet.mjs`) then verifies every original line is still present, in order and unchanged, before returning it for teacher confirmation.
+The same model also serves `POST /wrap` for Snippet mode: it receives loose C++ lines and returns a complete program with only boilerplate added. The Node API (`server/snippet.mjs`) then checks whether every original line is still present, in order and unchanged, and returns the program with a warning if not, for teacher confirmation.
 
 ## Run
 
