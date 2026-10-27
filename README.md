@@ -317,6 +317,7 @@ Open http://127.0.0.1:5173. Typed code works without the OCR service; Snippet mo
 
 | Document | Contents |
 |---|---|
+| [Files guide](docs/FILES.md) | Every folder and file in the repository and what it is for |
 | [Project report](docs/PROJECT_REPORT.md) | Plain-language explanation of the PRD, the whole project, the tools used and the security measures |
 | [PRD](docs/PRD.md) | Requirements, scope, user stories, acceptance criteria |
 | [Application README](whiteboard-code-verifier/README.md) | Feature list and setup |
