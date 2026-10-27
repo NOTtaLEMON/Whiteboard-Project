@@ -394,3 +394,5 @@ pre { margin: 0; font: 11px/1.7 'SFMono-Regular', Consolas, 'Liberation Mono', m
 .input-heading > .quiet-button { align-self: center; justify-content: center; }
 .snippet-review { margin-top: 14px; }
 .snippet-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.owner-key { display: flex; gap: 6px; margin-top: 6px; }
+.owner-key input { min-width: 0; flex: 1; padding: 4px 8px; border: 1px solid #c9d2c2; border-radius: 6px; }

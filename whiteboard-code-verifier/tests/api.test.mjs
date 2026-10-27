@@ -256,3 +256,26 @@ test('public local APIs ignore old token configuration and retain origin checks'
   assert.equal((await legacy.json()).access, 'public');
   assert.ok(legacy.headers['set-cookie'].every(value => value.includes('Max-Age=0')));
 });
+
+test('with an owner key configured, only the owner reaches the private API; health and headers stay public', async (t) => {
+  const previous = process.env.BOARDROOM_OWNER_KEY;
+  process.env.BOARDROOM_OWNER_KEY = 'owner-secret-key-123';
+  t.after(() => { if (previous === undefined) delete process.env.BOARDROOM_OWNER_KEY; else process.env.BOARDROOM_OWNER_KEY = previous; });
+  let runs = 0;
+  const base = await start(t, { health: async () => ({ available: true }), run: async () => { runs += 1; return { status: 'success' }; } });
+  const run = (headers = {}) => base('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify({ source: 'int main(){}' }) });
+  const denied = await run();
+  assert.equal(denied.status, 401);
+  assert.equal((await denied.json()).code, 'owner_key_required');
+  assert.equal((await run({ Authorization: 'Bearer wrong-key' })).status, 401);
+  assert.equal((await base('/api/snapshots')).status, 401);
+  assert.equal((await base('/api/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 401);
+  assert.equal(runs, 0, 'nothing ran without the key');
+  assert.equal((await run({ Authorization: 'Bearer owner-secret-key-123' })).status, 200);
+  assert.equal(runs, 1);
+  const health = await (await base('/api/health')).json();
+  assert.equal(health.locked, true);
+  assert.equal(health.authorized, false);
+  assert.equal(JSON.stringify(health).includes('owner-secret-key-123'), false);
+  assert.equal((await base('/api/library/stack.h')).status, 200);
+});

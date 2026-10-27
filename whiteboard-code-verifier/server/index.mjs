@@ -7,6 +7,7 @@ import { sandboxHealth, runSandbox } from './sandbox.mjs';
 import { hostedRunnerHealth, runHostedProgram } from './hosted-runner.mjs';
 import { loadOcrEnvironment, ocrConfiguration, recognizeHandwriting, OCR_BODY_LIMIT } from './ocr.mjs';
 import { prepareSnippet, SNIPPET_BODY_LIMIT } from './snippet.mjs';
+import { hasOwnerKey, ownerKeyConfigured, OWNER_KEY_ERROR } from './owner-key.mjs';
 import { libraries } from '../src/libraries.js';
 import { createSnapshotStore, SNAPSHOT_BODY_LIMIT } from './snapshots.mjs';
 import { validLanguage, languagePayload } from '../src/languages.js';
@@ -111,11 +112,15 @@ export function createHandler({ run = defaultRun, health = defaultHealth, now = 
       ]);
       return send(res, 200, { access: 'public', authenticated: false });
     }
+    // Only the health check and the public teaching headers answer without the owner key.
+    const publicPath = pathname === '/api/health' || pathname.startsWith('/api/library/');
+    if (pathname.startsWith('/api/') && !publicPath && !hasOwnerKey(req)) return send(res, 401, OWNER_KEY_ERROR);
     try {
       if (pathname === '/api/health' && req.method === 'GET') {
         const language = new URL(req.url, 'http://localhost').searchParams.get('language') ?? 'c';
         if (!validLanguage(language)) return send(res, 400, { error: 'Choose C++ or Python.' });
-        return send(res, 200, { service: 'whiteboard-code-verifier', access: 'public', runner: await health(language), ocr: ocrHealth() });
+        return send(res, 200, { service: 'whiteboard-code-verifier', access: 'public', locked: ownerKeyConfigured(), authorized: hasOwnerKey(req),
+          runner: await health(language), ocr: ocrHealth() });
       }
       if (pathname === '/api/snapshots/sync' && req.method === 'GET') return send(res, 200, await snapshots.syncStatus());
       if (pathname === '/api/snapshots/sync' && req.method === 'POST') {

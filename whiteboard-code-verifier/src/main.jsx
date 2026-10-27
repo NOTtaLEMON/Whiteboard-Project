@@ -17,7 +17,7 @@ import ProgramRegions from './ProgramRegions.jsx';
 import WorkspaceLayout from './WorkspaceLayout.jsx';
 import SnapshotHistory from './SnapshotHistory.jsx';
 import TestCases from './TestCases.jsx';
-import { readApiJson, apiFetch } from './api.js';
+import { readApiJson, apiFetch, setOwnerKey } from './api.js';
 import stackHeader from '../runner/lib/stack.h?raw';
 import listHeader from '../runner/lib/linked_list.h?raw';
 import queueHeader from '../runner/lib/queue.h?raw';
@@ -70,6 +70,15 @@ function MemoryDiagram({ stdout }) {
     <div className="memory-location allocation"><span>DYNAMIC STORAGE · BUFFER</span><code>{buffer}</code><small>The address returned by <code>malloc</code></small></div>
     <p>Addresses are printed by this program. Sanitizers change allocation layout; these are not glibc region classifications.</p>
   </figure>;
+}
+
+// Shown only to the site owner's browser when the API is locked: the key is checked by the server, not here.
+function OwnerKeyForm({ onSaved }) {
+  const [value, setValue] = useState('');
+  return <form className="owner-key" onSubmit={(event) => { event.preventDefault(); setOwnerKey(value.trim()); setValue(''); onSaved(); }}>
+    <input type="password" aria-label="Owner key" placeholder="Owner key" autoComplete="off" value={value} onChange={(event) => setValue(event.target.value)} />
+    <button type="submit" disabled={!value.trim()}>Unlock</button>
+  </form>;
 }
 
 function App() {
@@ -173,6 +182,12 @@ function App() {
       const data = await readApiJson(response);
       if (requestId !== healthRequest.current || currentLanguage.current !== language) return;
       if (!data || typeof data.runner?.available !== 'boolean' || typeof data.ocr?.available !== 'boolean') throw new Error('Invalid API response');
+      if (data.locked && !data.authorized) {
+        const message = 'Running code, handwriting and lesson history are private on this site. Drawing and downloads still work.';
+        setSnapshotAvailable(false); setSnapshotMessage(message);
+        setHealth({ available: false, locked: true, message }); setOcrHealth({ available: false, message });
+        return;
+      }
       setSnapshotAvailable(data.snapshots?.available !== false);
       setSnapshotMessage(data.snapshots?.message ?? 'Lesson history is unavailable. You can download this board from the top bar.');
       setHealth(data.runner);
@@ -869,7 +884,7 @@ function App() {
               <button className="icon-button" aria-label="Close panel" title="Close panel" onClick={() => setPanelVisible(false)}>×</button>
             </div>
             {hasInk && <p className="handwriting-state">{recognizedProgram ? 'Handwriting reviewed. Ready to compile.' : 'Handwriting needs recognition and teacher confirmation.'}</p>}
-            {health && !health.available && <div className="runner-notice"><span>{health.message}</span><button onClick={checkHealth}>Check again</button></div>}
+            {health && !health.available && <div className="runner-notice"><span>{health.message}</span>{health.locked ? <OwnerKeyForm onSaved={checkHealth} /> : <button onClick={checkHealth}>Check again</button>}</div>}
 
             <section className="panel-code" aria-label="Code that runs">
               {automaticSnapshot && <p className="panel-help" role="status" aria-label="Automatic snapshot status">{automaticSnapshot}</p>}

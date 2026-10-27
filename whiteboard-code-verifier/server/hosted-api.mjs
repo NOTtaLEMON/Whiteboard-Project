@@ -6,7 +6,10 @@ export function sendJson(res, status, value) {
   res.end(JSON.stringify(value));
 }
 
-export function authorize(req, res) {
+import { hasOwnerKey, OWNER_KEY_ERROR } from './owner-key.mjs';
+
+// open: true for the health check, which answers everyone (it reports whether the caller holds the owner key).
+export function authorize(req, res, { open = false } = {}) {
   const origin = req.headers.origin;
   const host = req.headers['x-forwarded-host'] ?? req.headers.host;
   if (origin && origin !== `https://${host}` && origin !== `http://${host}`) {
@@ -15,6 +18,10 @@ export function authorize(req, res) {
   }
   if (req.headers['sec-fetch-site'] === 'cross-site') {
     sendJson(res, 403, { error: 'Use this site to access the API.' });
+    return false;
+  }
+  if (!open && !hasOwnerKey(req)) {
+    sendJson(res, 401, OWNER_KEY_ERROR);
     return false;
   }
   return true;
