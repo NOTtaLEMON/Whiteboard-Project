@@ -221,11 +221,10 @@ Every request gets a fresh container that is removed afterwards:
 | **Railway** | Alternative container hosting | `railway.json`, `Dockerfile` |
 | **Caddy** (self-hosted option) | HTTPS reverse proxy in front of the Docker API | See [Docker API deployment](whiteboard-code-verifier/docs/docker-api-deployment.md) |
 
-### Design and presentation tooling
+### Version control
 
 | Tool | Use |
 |---|---|
-| **Node and Python scripts** (`deck/build/`) | Generated the pitch deck (`deck/Boardroom-v4.pptx`) and animated demo GIFs |
 | **Git** | Version control for the code and for lesson snapshots |
 
 ## 9. How to run it
@@ -304,7 +303,6 @@ Open http://127.0.0.1:5173. Typed code works without the OCR service. See [ocr-s
 ├── README.md                     This file
 ├── docs/PRD.md                   Product requirements document
 ├── Dockerfile, railway.json      Container build and Railway deployment
-├── deck/                         Pitch deck (.pptx) and generation scripts
 └── whiteboard-code-verifier/     The application
     ├── src/                      React UI, board extraction, capture, review
     ├── server/                   Node API, OCR client, sandbox, snapshots
