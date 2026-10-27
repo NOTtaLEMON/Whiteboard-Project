@@ -5,9 +5,9 @@ import { promisify } from 'node:util';
 import { cp, mkdtemp, rename, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createSnapshotStore } from '../server/snapshots.mjs';
-import { extractProgram, programSignature } from '../src/board.js';
-import { inkFingerprint } from '../src/handwriting.js';
+import { createSnapshotStore } from '../server/lessons/snapshots.mjs';
+import { extractProgram, programSignature } from '../shared/board.js';
+import { inkFingerprint } from '../shared/handwriting.js';
 
 const execute = promisify(execFile);
 const git = async (root, ...args) => (await execute('git', ['-C', root, ...args])).stdout.trim();

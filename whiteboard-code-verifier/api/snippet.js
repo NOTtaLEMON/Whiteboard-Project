@@ -1,5 +1,5 @@
-import { authorize, jsonBody, apiError, sendJson } from '../server/hosted-api.mjs';
-import { prepareSnippet, SNIPPET_BODY_LIMIT } from '../server/snippet.mjs';
+import { authorize, jsonBody, apiError, sendJson } from '../server/hosted/hosted-api.mjs';
+import { prepareSnippet, SNIPPET_BODY_LIMIT } from '../server/ai/snippet.mjs';
 
 export const config = { maxDuration: 60 };
 

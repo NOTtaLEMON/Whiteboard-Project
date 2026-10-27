@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { apiFetch, readApiJson } from './api.js';
+import { apiFetch, readApiJson } from '../lib/api.js';
 
 export default function SnapshotHistory({ onOpen }) {
   const [snapshots, setSnapshots] = useState([]);

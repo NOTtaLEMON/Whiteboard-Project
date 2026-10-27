@@ -1,9 +1,9 @@
-import { validLanguage } from '../src/languages.js';
+import { validLanguage } from '../../shared/languages.js';
 import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const ENV_FILE = fileURLToPath(new URL('../.env', import.meta.url));
+const ENV_FILE = fileURLToPath(new URL('../../.env', import.meta.url));
 const DEFAULT_OCR_URL = 'http://127.0.0.1:8788';
 const DEFAULT_OCR_MODEL = 'Qwen/Qwen2-VL-2B-Instruct';
 export const OCR_BODY_LIMIT = 4 * 1024 * 1024;

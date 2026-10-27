@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { lessons } from '../../src/lessons.js';
-import { libraries } from '../../src/libraries.js';
+import { lessons } from '../../src/lib/lessons.js';
+import { libraries } from '../../shared/libraries.js';
 import { boardFile, importBoard, openPanel } from './helpers.js';
 
 test('keeps the board clean, opens the code panel on demand, and resizes it with mouse and keyboard', async ({ page }, testInfo) => {

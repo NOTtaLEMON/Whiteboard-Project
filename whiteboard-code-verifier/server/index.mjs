@@ -1,16 +1,16 @@
-import { createRateLimiter, clientAddress } from './rate-limit.mjs';
+import { createRateLimiter, clientAddress } from './security/rate-limit.mjs';
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, extname, resolve, sep } from 'node:path';
-import { sandboxHealth, runSandbox } from './sandbox.mjs';
-import { hostedRunnerHealth, runHostedProgram } from './hosted-runner.mjs';
-import { loadOcrEnvironment, ocrConfiguration, recognizeHandwriting, OCR_BODY_LIMIT } from './ocr.mjs';
-import { prepareSnippet, SNIPPET_BODY_LIMIT } from './snippet.mjs';
-import { hasOwnerKey, ownerKeyConfigured, OWNER_KEY_ERROR } from './owner-key.mjs';
-import { libraries } from '../src/libraries.js';
-import { createSnapshotStore, SNAPSHOT_BODY_LIMIT } from './snapshots.mjs';
-import { validLanguage, languagePayload } from '../src/languages.js';
+import { sandboxHealth, runSandbox } from './execution/sandbox.mjs';
+import { hostedRunnerHealth, runHostedProgram } from './execution/hosted-runner.mjs';
+import { loadOcrEnvironment, ocrConfiguration, recognizeHandwriting, OCR_BODY_LIMIT } from './ai/ocr.mjs';
+import { prepareSnippet, SNIPPET_BODY_LIMIT } from './ai/snippet.mjs';
+import { hasOwnerKey, ownerKeyConfigured, OWNER_KEY_ERROR } from './security/owner-key.mjs';
+import { libraries } from '../shared/libraries.js';
+import { createSnapshotStore, SNAPSHOT_BODY_LIMIT } from './lessons/snapshots.mjs';
+import { validLanguage, languagePayload } from '../shared/languages.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = resolve(ROOT, 'dist');

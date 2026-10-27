@@ -1,7 +1,7 @@
 import { selectWritingRegion } from './board-helpers.js';
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { lessons } from '../../src/lessons.js';
+import { lessons } from '../../src/lib/lessons.js';
 import { boardFile, importBoard } from './helpers.js';
 
 // The provider is explicitly stubbed here. These tests verify capture/review and

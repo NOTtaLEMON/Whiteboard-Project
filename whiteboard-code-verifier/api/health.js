@@ -1,9 +1,9 @@
-import { authorize, sendJson } from '../server/hosted-api.mjs';
-import { hasOwnerKey, ownerKeyConfigured } from '../server/owner-key.mjs';
-import { ocrConfiguration } from '../server/ocr.mjs';
-import { hostedRunnerHealth } from '../server/hosted-runner.mjs';
-import { validLanguage } from '../src/languages.js';
-import { githubSnapshotConfiguration } from '../server/github-snapshots.mjs';
+import { authorize, sendJson } from '../server/hosted/hosted-api.mjs';
+import { hasOwnerKey, ownerKeyConfigured } from '../server/security/owner-key.mjs';
+import { ocrConfiguration } from '../server/ai/ocr.mjs';
+import { hostedRunnerHealth } from '../server/execution/hosted-runner.mjs';
+import { validLanguage } from '../shared/languages.js';
+import { githubSnapshotConfiguration } from '../server/lessons/github-snapshots.mjs';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed.' });

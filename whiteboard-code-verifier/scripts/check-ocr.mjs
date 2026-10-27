@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { loadOcrEnvironment, recognizeHandwriting } from '../server/ocr.mjs';
+import { loadOcrEnvironment, recognizeHandwriting } from '../server/ai/ocr.mjs';
 
 const path = process.argv[2];
 if (!path) {

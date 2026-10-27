@@ -1,8 +1,8 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { apiFetch, readApiJson } from './api.js';
-import { languagePayload } from './languages.js';
+import { apiFetch, readApiJson } from '../lib/api.js';
+import { languagePayload } from '../../shared/languages.js';
 
-import { MAX_CASES, CASE_STATUSES as statuses, emptyCase, suiteKey, validateSuite, compareOutput } from './test-cases.js';
+import { MAX_CASES, CASE_STATUSES as statuses, emptyCase, suiteKey, validateSuite, compareOutput } from '../lib/test-cases.js';
 
 const TestCases = forwardRef(function TestCases({ program, signature, disabled, onBusy, captureScene, onCompiled }, ref) {
   const language = program.language ?? 'c';

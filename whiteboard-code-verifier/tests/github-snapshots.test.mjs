@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { createGithubSnapshotStore, githubSnapshotConfiguration } from '../server/github-snapshots.mjs';
+import { createGithubSnapshotStore, githubSnapshotConfiguration } from '../server/lessons/github-snapshots.mjs';
 import { createSnapshotHandler } from '../api/snapshots.js';
 
 const env = { SNAPSHOT_GITHUB_REPOSITORY: 'teacher/lessons', SNAPSHOT_GITHUB_TOKEN: 'private-test-key' };

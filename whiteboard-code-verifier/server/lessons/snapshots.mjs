@@ -4,15 +4,15 @@ import { mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from 'node:fs/p
 import { randomUUID } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { extractProgram, isOverlay } from '../src/board.js';
-import { handwritingChannels, inkFingerprint } from '../src/handwriting.js';
+import { extractProgram, isOverlay } from '../../shared/board.js';
+import { handwritingChannels, inkFingerprint } from '../../shared/handwriting.js';
 import { snapshotBundle } from './snapshot-bundle.mjs';
 import { createSnapshotSync } from './snapshot-sync.mjs';
-import { libraries } from '../src/libraries.js';
-import { validLanguage, languageInfo } from '../src/languages.js';
+import { libraries } from '../../shared/libraries.js';
+import { validLanguage, languageInfo } from '../../shared/languages.js';
 
 const execute = promisify(execFile);
-const APP = fileURLToPath(new URL('../', import.meta.url));
+const APP = fileURLToPath(new URL('../../', import.meta.url));
 export const SNAPSHOT_BODY_LIMIT = 4 * 1024 * 1024;
 export const SNAPSHOT_ID = /^\d{4}-\d{2}-\d{2}\/\d{2}-\d{2}-\d{2}-[a-z0-9-]{1,60}-[a-f0-9]{8}$/;
 const invalid = (message, status = 400) => Object.assign(new Error(message), { status });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { linkedListDrawing, composeBoardSource } from '../src/linked-list-drawing.js';
+import { linkedListDrawing, composeBoardSource } from '../src/lib/linked-list-drawing.js';
 
 test('recognizes only complete integer-chain drawings without guessing missing or branched links', () => {
   assert.equal(linkedListDrawing('1->3->4->5'), '1->3->4->5');

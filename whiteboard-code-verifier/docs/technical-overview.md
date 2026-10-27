@@ -56,19 +56,19 @@ The workspace fills the browser viewport beneath compact controls. Browser fulls
 - Blue ink (`#1971c2`) supplies standard input.
 - Other colors serve as annotations and are excluded from extraction and OCR captures.
 
-For typed text, `src/board.js` orders text elements by position and preserves their text, including blank lines. It also constructs a source map from compiler line numbers to text-element coordinates. Typed-only channels bypass OCR entirely.
+For typed text, `shared/board.js` orders text elements by position and preserves their text, including blank lines. It also constructs a source map from compiler line numbers to text-element coordinates. Typed-only channels bypass OCR entirely.
 
-For handwritten channels, `src/capture.js` exports the relevant strokes and any text in that same channel. Code and stdin are captured separately, with padding and a white background. Frame borders and verifier overlays are excluded. Crops at or below 1,800 pixels retain their native dimensions; larger crops are reduced proportionally to that longest-side limit. PNG encoding remains lossless; the API accepts PNGs up to 2,048 × 2,048.
+For handwritten channels, `src/lib/capture.js` exports the relevant strokes and any text in that same channel. Code and stdin are captured separately, with padding and a white background. Frame borders and verifier overlays are excluded. Crops at or below 1,800 pixels retain their native dimensions; larger crops are reduced proportionally to that longest-side limit. PNG encoding remains lossless; the API accepts PNGs up to 2,048 × 2,048.
 
 ### Language selection
 
-The right panel's C/Python radio toggle sets a fixed `c` or `python` value. `src/languages.js` shares supported IDs, source filenames and payload defaults. Omitted language fields retain C behavior. Signatures include Python mode so old C results and pending proposals cannot be reused across language changes. Changing the language clears handwriting confirmation, and saved scenes restore their language; legacy scenes default to C.
+The right panel's C/Python radio toggle sets a fixed `c` or `python` value. `shared/languages.js` shares supported IDs, source filenames and payload defaults. Omitted language fields retain C behavior. Signatures include Python mode so old C results and pending proposals cannot be reused across language changes. Changing the language clears handwriting confirmation, and saved scenes restore their language; legacy scenes default to C.
 
 The API forwards Python requests to the same isolated Docker runner locally and to Wandbox's configured Python runtime on Vercel. Python syntax checking preserves original line numbers; exception tracebacks map back to board lines. Python uses the same input, output, time, network and container limits as C, with no C header validation or sanitizer claims. The OCR prompt is told the selected language. Python snapshots store `board.py` and a language-tagged manifest; replay passes that language to the frozen runner. Existing C snapshots and manifests remain supported.
 
 ## 5. OCR and teacher review
 
-`server/ocr.mjs` forwards the code and stdin PNG crops to the local `ocr-service/` (`POST /ocr`, default `http://127.0.0.1:8788`, override with `OCR_SERVICE_URL`). The service runs a **pretrained vision-language model** (`Qwen/Qwen2-VL-2B-Instruct`, on CPU by default) on each whole crop with a prompt that demands a literal, one-line-per-written-line transcription that preserves indentation and symbols and never repairs code. The text is split into lines; a line is `uncertain` when its least-confident token is below `OCR_UNCERTAIN_BELOW` (0.5). Each line contains:
+`server/ai/ocr.mjs` forwards the code and stdin PNG crops to the local `ocr-service/` (`POST /ocr`, default `http://127.0.0.1:8788`, override with `OCR_SERVICE_URL`). The service runs a **pretrained vision-language model** (`Qwen/Qwen2-VL-2B-Instruct`, on CPU by default) on each whole crop with a prompt that demands a literal, one-line-per-written-line transcription that preserves indentation and symbols and never repairs code. The text is split into lines; a line is `uncertain` when its least-confident token is below `OCR_UNCERTAIN_BELOW` (0.5). Each line contains:
 
 | Field | Meaning |
 | --- | --- |
@@ -79,7 +79,7 @@ The API forwards Python requests to the same isolated Docker runner locally and 
 
 The API waits up to `OCR_TIMEOUT_MS` for the model (default 180 s locally, 50 s on Vercel). The model is instructed to transcribe what it sees and never insert missing headers, `main()`, ampersands or semicolons, so the teacher's mistakes stay visible. Faithful transcription is not guaranteed, so review is mandatory.
 
-`src/HandwritingPanel.jsx` presents the captured image and editable lines. Teachers can correct text, inspect alternate readings, and insert or remove lines. They must acknowledge checking both code and input, then select **Use confirmed code**. A separate **Verify & run** action submits that text for execution.
+`src/components/HandwritingPanel.jsx` presents the captured image and editable lines. Teachers can correct text, inspect alternate readings, and insert or remove lines. They must acknowledge checking both code and input, then select **Use confirmed code**. A separate **Verify & run** action submits that text for execution.
 
 Recognition and execution are independent endpoints. Reading handwriting or confirming it never launches the compiler. Scene fingerprints tie confirmation to the reviewed frame contents. New or changed ink invalidates confirmation. Immutable scene snapshots prevent Excalidraw's in-place stroke updates from associating a transcription with an outdated scene.
 
@@ -89,7 +89,7 @@ The researched alternatives—Cloud Vision, Mistral OCR, MyScript, PaddleOCR, Tr
 
 ## 6. Compilation and execution
 
-`server/sandbox.mjs` creates a fresh `whiteboard-runner:local` container for each request. Inside it, `runner/runner.py` writes the source to a temporary `board.cpp`, validates includes, and invokes g++ with flags including:
+`server/execution/sandbox.mjs` creates a fresh `whiteboard-runner:local` container for each request. Inside it, `runner/runner.py` writes the source to a temporary `board.cpp`, validates includes, and invokes g++ with flags including:
 
 ```text
 -std=c++17 -g -O0 -Wall -Wextra -fno-omit-frame-pointer
@@ -154,7 +154,7 @@ OCR now requests low thinking and compact `{text, uncertain}` lines. It preserve
 
 After each completed execution response, the client automatically archives the full canvas captured just before that run. Each input case creates a separate snapshot. `scene.verifier.execution` records the submitted language, source, stdin, level, run/case kind, and browser-reported result. Shared snapshot validation checks this metadata and retains handwriting-review requirements. Replay files and vendored headers follow the submitted source, including editor changes; `board.excalidraw` retains all original frames, strokes, annotations and assets. Failures are visible independently of compiler results. This is an archive of completed responses, not a persistent offline retry queue.
 
-The hosted adapter in `server/github-snapshots.mjs` shares validation and replay-bundle preparation with the disk store. It creates a Git tree based on the latest branch commit, creates one commit for the entire folder, and advances only the archive branch without force. Conflicting saves retry against the winning parent. Reads and comparisons use GitHub commit references, so no warm function, background queue, or temporary disk is required. The token stays server-side, and all classroom users share the same archive. Lesson visibility follows repository visibility. Vercel Git deployments are disabled for `boardroom-lessons`.
+The hosted adapter in `server/lessons/github-snapshots.mjs` shares validation and replay-bundle preparation with the disk store. It creates a Git tree based on the latest branch commit, creates one commit for the entire folder, and advances only the archive branch without force. Conflicting saves retry against the winning parent. Reads and comparisons use GitHub commit references, so no warm function, background queue, or temporary disk is required. The token stays server-side, and all classroom users share the same archive. Lesson visibility follows repository visibility. Vercel Git deployments are disabled for `boardroom-lessons`.
 
 There is no application database or user-account system. Hosted lesson persistence uses a configured GitHub repository; the local server uses a separate Git archive on disk. The working board is held in browser application state. Teachers can download its Excalidraw-compatible scene or use **Snapshot** to save `board.excalidraw`, `board.cpp` or `board.py`, and `input.txt` on the API server. Snapshot folders are grouped by UTC date, with a time/title/unique suffix for each save. Source and input are derived from the selected frame; handwritten source requires a matching confirmed transcription. Saving does not require successful compilation or a working Docker runner.
 

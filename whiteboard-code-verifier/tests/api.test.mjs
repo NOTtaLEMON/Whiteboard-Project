@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { createHandler, validatePayload } from '../server/index.mjs';
-import { libraries } from '../src/libraries.js';
+import { libraries } from '../shared/libraries.js';
 import { readFile } from 'node:fs/promises';
 
 async function start(t, dependencies = {}) {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyCase, MAX_CASES, validateSuite, compareOutput, suiteKey } from '../src/test-cases.js';
+import { emptyCase, MAX_CASES, validateSuite, compareOutput, suiteKey } from '../src/lib/test-cases.js';
 
 test('suite import validates language, bounds and all fields before replacing cases', () => {
   const suite = { version: 1, language: 'c', cases: [{ ...emptyCase(99), stdin: '2\n', expectedOutput: '4\n' }] };

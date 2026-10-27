@@ -4,12 +4,12 @@ Reads handwriting with a **pretrained vision-language model, [Qwen2-VL 2B Instru
 
 ## How it works
 
-1. The Node API (`server/ocr.mjs`) posts the code and stdin PNG crops to `POST /ocr`.
+1. The Node API (`server/ai/ocr.mjs`) posts the code and stdin PNG crops to `POST /ocr`.
 2. `service.py` sends each whole crop to the model with a fixed prompt: transcribe literally, one output line per written line, keep indentation, blank lines and every symbol, and never fix, complete or explain anything.
 3. The output is split into lines. A line is flagged `uncertain` when its least-confident token has probability below `OCR_UNCERTAIN_BELOW` (default 0.5) or contains `?`.
 4. The API validates the answer and the teacher must still confirm it.
 
-The same model also serves `POST /wrap` for Snippet mode: it receives loose C++ lines and returns a complete program with only boilerplate added. The Node API (`server/snippet.mjs`) then checks whether every original line is still present, in order and unchanged, and returns the program with a warning if not, for teacher confirmation.
+The same model also serves `POST /wrap` for Snippet mode: it receives loose C++ lines and returns a complete program with only boilerplate added. The Node API (`server/ai/snippet.mjs`) then checks whether every original line is still present, in order and unchanged, and returns the program with a warning if not, for teacher confirmation.
 
 ## Run
 

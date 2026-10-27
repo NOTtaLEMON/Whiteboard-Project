@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { prepareSnapshot, SNAPSHOT_ID } from './snapshots.mjs';
-import { libraries } from '../src/libraries.js';
+import { libraries } from '../../shared/libraries.js';
 
 const fail = (message, status = 503, githubStatus) => Object.assign(new Error(message), { status, githubStatus });
 const headers = new Set([...libraries.map((library) => library.file), 'board_contract.h']);
@@ -151,7 +151,7 @@ export function createGithubSnapshotStore({ env = process.env, fetchImpl = fetch
       const savedHeaders = await Promise.all(Object.keys(manifest.files)
         .filter((name) => name.startsWith('lib/') && headers.has(name.slice(4))).sort().map(async (name) => {
           const [saved, current] = await Promise.all([readFileAt(id, name, sha),
-            readFile(new URL(`../runner/${name}`, import.meta.url), 'utf8')]);
+            readFile(new URL(`../../runner/${name}`, import.meta.url), 'utf8')]);
           return { file: name.slice(4), saved, current, changed: saved !== current };
         }));
       return { legacy: false, headers: savedHeaders };

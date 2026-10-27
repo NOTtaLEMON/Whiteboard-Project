@@ -1,5 +1,5 @@
 import { convertToExcalidrawElements, getCommonBounds } from '@excalidraw/excalidraw';
-import { CODE_COLOR, INPUT_COLOR, diagnosticBoxes, isOverlay } from './board.js';
+import { CODE_COLOR, INPUT_COLOR, diagnosticBoxes, isOverlay } from '../../shared/board.js';
 
 export function lessonScene(lesson) {
   const texts = convertToExcalidrawElements([

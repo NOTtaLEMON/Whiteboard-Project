@@ -1,9 +1,9 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { captureHandwriting } from './capture.js';
-import { extractProgram } from './board.js';
-import { handwritingChannels, inkFingerprint, makeReviewDraft, reviewedProgram } from './handwriting.js';
-import { apiFetch, readApiJson } from './api.js';
-import { languagePayload } from './languages.js';
+import { captureHandwriting } from '../lib/capture.js';
+import { extractProgram } from '../../shared/board.js';
+import { handwritingChannels, inkFingerprint, makeReviewDraft, reviewedProgram } from '../../shared/handwriting.js';
+import { apiFetch, readApiJson } from '../lib/api.js';
+import { languagePayload } from '../../shared/languages.js';
 
 const HandwritingPanel = forwardRef(function HandwritingPanel({
   api, frameId, fingerprint, configuration, hasInk, language = 'c',

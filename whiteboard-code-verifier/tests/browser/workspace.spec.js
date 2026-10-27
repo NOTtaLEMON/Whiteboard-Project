@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { lessons } from '../../src/lessons.js';
+import { lessons } from '../../src/lib/lessons.js';
 import { boardFile, importBoard, openPanel } from './helpers.js';
 
 test('loads the canvas, edits code and input, and roundtrips a downloaded board', async ({ page }, testInfo) => {

@@ -6,7 +6,7 @@ export function sendJson(res, status, value) {
   res.end(JSON.stringify(value));
 }
 
-import { hasOwnerKey, OWNER_KEY_ERROR } from './owner-key.mjs';
+import { hasOwnerKey, OWNER_KEY_ERROR } from '../security/owner-key.mjs';
 
 // open: true for the health check, which answers everyone (it reports whether the caller holds the owner key).
 export function authorize(req, res, { open = false } = {}) {

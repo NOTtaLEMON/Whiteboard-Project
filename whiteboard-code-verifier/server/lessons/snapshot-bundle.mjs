@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { programSignature } from '../src/board.js';
+import { programSignature } from '../../shared/board.js';
 
 // Immutable manifest for the same GCC 14.2 Bookworm image used by the application.
 const IMAGE = 'gcc:14.2.0-bookworm@sha256:b99b86a28812b1e6453a231a947dc43d76fe192788a12f344a9b568bf9f5d24c';
@@ -15,7 +15,7 @@ function includes(source) {
   return [...normalized.matchAll(/^\s*#\s*include\s*[<"]([a-z0-9_.]+)[>"]/gm)].map((match) => match[1]);
 }
 
-const readAsset = (name) => readFile(new URL(`../runner/${name}`, import.meta.url));
+const readAsset = (name) => readFile(new URL(`../../runner/${name}`, import.meta.url));
 
 export async function snapshotBundle(scene, program) {
   const files = new Map();

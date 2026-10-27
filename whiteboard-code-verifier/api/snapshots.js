@@ -1,6 +1,6 @@
-import { authorize, sendJson, jsonBody, apiError } from '../server/hosted-api.mjs';
-import { createGithubSnapshotStore } from '../server/github-snapshots.mjs';
-import { SNAPSHOT_BODY_LIMIT } from '../server/snapshots.mjs';
+import { authorize, sendJson, jsonBody, apiError } from '../server/hosted/hosted-api.mjs';
+import { createGithubSnapshotStore } from '../server/lessons/github-snapshots.mjs';
+import { SNAPSHOT_BODY_LIMIT } from '../server/lessons/snapshots.mjs';
 
 export function createSnapshotHandler(createStore = createGithubSnapshotStore) {
   return async function handler(req, res) {

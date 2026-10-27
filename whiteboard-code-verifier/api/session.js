@@ -1,4 +1,4 @@
-import { authorize, sendJson } from '../server/hosted-api.mjs';
+import { authorize, sendJson } from '../server/hosted/hosted-api.mjs';
 
 // Compatibility endpoint for clients upgrading from cookie authentication.
 export default function handler(req, res) {

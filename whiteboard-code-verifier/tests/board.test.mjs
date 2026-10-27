@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { extractProgram, diagnosticBoxes, programSignature, INPUT_COLOR } from '../src/board.js';
+import { extractProgram, diagnosticBoxes, programSignature, INPUT_COLOR } from '../shared/board.js';
 
 function text(id, content, y, extra = {}) {
   return { id, type: 'text', text: content, x: 20, y, fontSize: 20, lineHeight: 1.5,

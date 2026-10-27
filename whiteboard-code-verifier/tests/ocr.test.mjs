@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ocrConfiguration, ocrTimeoutMs, recognizeHandwriting, validateOcrImages, validateTranscription } from '../server/ocr.mjs';
+import { ocrConfiguration, ocrTimeoutMs, recognizeHandwriting, validateOcrImages, validateTranscription } from '../server/ai/ocr.mjs';
 
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aHoQAAAAASUVORK5CYII=';
 const line = (text, extra = {}) => ({ text, box: [10, 20, 80, 900], uncertain: false, alternatives: [], ...extra });

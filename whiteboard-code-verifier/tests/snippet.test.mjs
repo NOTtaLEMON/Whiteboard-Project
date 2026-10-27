@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkKeepsLines, prepareSnippet, validateSnippet } from '../server/snippet.mjs';
+import { checkKeepsLines, prepareSnippet, validateSnippet } from '../server/ai/snippet.mjs';
 
 const env = { OCR_SERVICE_URL: 'http://ocr.test:8788', OCR_MODEL: 'test-model', VERCEL: '1' };
 const snippet = 'int a, b;\nscanf("%d %d", a, b);\n\nprintf("%d\\n", a + b)';

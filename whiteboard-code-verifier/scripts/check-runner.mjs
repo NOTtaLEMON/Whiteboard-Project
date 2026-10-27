@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { sandboxHealth, runSandbox } from '../server/sandbox.mjs';
-import { lessons } from '../src/lessons.js';
+import { sandboxHealth, runSandbox } from '../server/execution/sandbox.mjs';
+import { lessons } from '../src/lib/lessons.js';
 import { readFile } from 'node:fs/promises';
 
 const state = await sandboxHealth();

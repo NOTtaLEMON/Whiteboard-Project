@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hostedRunnerConfiguration, hostedRunnerHealth, runHostedProgram } from '../server/hosted-runner.mjs';
+import { hostedRunnerConfiguration, hostedRunnerHealth, runHostedProgram } from '../server/execution/hosted-runner.mjs';
 
 const env = { WANDBOX_API_URL: 'https://compiler.example/api' };
 const readHeader = async () => '/* curated */';

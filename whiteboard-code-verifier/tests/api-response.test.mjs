@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readApiJson } from '../src/api-response.js';
+import { readApiJson } from '../src/lib/api-response.js';
 
 function response(body, status, path = '/api/ocr') {
   const result = new Response(body, { status });

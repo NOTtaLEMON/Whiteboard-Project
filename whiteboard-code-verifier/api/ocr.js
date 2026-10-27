@@ -1,5 +1,5 @@
-import { authorize, jsonBody, apiError, sendJson } from '../server/hosted-api.mjs';
-import { recognizeHandwriting, OCR_BODY_LIMIT } from '../server/ocr.mjs';
+import { authorize, jsonBody, apiError, sendJson } from '../server/hosted/hosted-api.mjs';
+import { recognizeHandwriting, OCR_BODY_LIMIT } from '../server/ai/ocr.mjs';
 
 export const config = { maxDuration: 60 };
 

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { loadOcrEnvironment, recognizeHandwriting } from '../server/ocr.mjs';
+import { loadOcrEnvironment, recognizeHandwriting } from '../server/ai/ocr.mjs';
 import { scoreTranscript, summarizeScores } from './ocr-benchmark-metrics.mjs';
 
 const manifestPath = process.argv[2];

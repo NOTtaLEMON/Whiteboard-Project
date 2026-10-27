@@ -1,5 +1,5 @@
-import { authorize, jsonBody, apiError, sendJson } from '../server/hosted-api.mjs';
-import { runHostedProgram } from '../server/hosted-runner.mjs';
+import { authorize, jsonBody, apiError, sendJson } from '../server/hosted/hosted-api.mjs';
+import { runHostedProgram } from '../server/execution/hosted-runner.mjs';
 
 export const config = { maxDuration: 30 };
 

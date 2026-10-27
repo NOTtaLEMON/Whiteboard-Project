@@ -173,15 +173,15 @@ Opening a snapshot in **History** still restores the board for editing and runs 
 ## Architecture
 
 ```text
-src/main.jsx → src/board.js → POST /api/run
+src/main.jsx → shared/board.js → POST /api/run
                               server/index.mjs
-                                → server/sandbox.mjs
+                                → server/execution/sandbox.mjs
                                   → disposable Docker container
                                     → runner/runner.py → GCC → program
                                 ← diagnostics, output, teaching notes
-src/canvas.js ← source line map ← result
+src/lib/canvas.js ← source line map ← result
 
-handwritten strokes → src/capture.js → POST /api/ocr → server/ocr.mjs → ocr-service (Qwen2-VL)
+handwritten strokes → src/lib/capture.js → POST /api/ocr → server/ai/ocr.mjs → ocr-service (Qwen2-VL)
   → editable review → teacher confirmation → the same POST /api/run path
 ```
 

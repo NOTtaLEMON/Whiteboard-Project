@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handwritingChannels, inkFingerprint, mappedLine, makeReviewDraft, reviewedProgram } from '../src/handwriting.js';
-import { diagnosticBoxes } from '../src/board.js';
+import { handwritingChannels, inkFingerprint, mappedLine, makeReviewDraft, reviewedProgram } from '../shared/handwriting.js';
+import { diagnosticBoxes } from '../shared/board.js';
 
 const stroke = { id: 'ink', type: 'freedraw', x: 10, y: 20, width: 50, height: 20,
   angle: 0, points: [[0, 0], [20, 10]], strokeColor: '#1e1e1e', frameId: 'frame' };
