@@ -219,7 +219,7 @@ A pretrained vision-language model (Qwen2-VL 2B Instruct) runs locally to transc
 
 The opt-in benchmark accepts a private JSON array such as `[{"id":"sample-01","codeImage":"sample-01.png","codeText":"int main(void) {\n...\n}","correctionSeconds":45}]`. Image paths are relative to the manifest; `stdinImage` and `stdinText` can be supplied together. Prepare gold transcriptions before running the model, and record teacher correction time separately. The command reports character error rate, exact-line rate, critical-symbol error rate, ambiguity count, and provider duration without printing classroom text. It makes one OCR request per sample (about 30 seconds each on a CPU), so keep the manifest outside the repository and budget for those requests. No genuine classroom samples are bundled here.
 
-This implementation was generated with OpenAI Codex from `../whiteboard-code-verifier.md`. It reuses Excalidraw and React (MIT), Vite (MIT), the GCC container/toolchain, and Python. The curated stack header adapts the implementation in the project notes. Excalidraw integration follows its [official API documentation](https://docs.excalidraw.com/docs/@excalidraw/excalidraw/api/excalidraw-element-skeleton).
+This implementation was generated with OpenAI Codex from `../docs/ORIGINAL_NOTES.md`. It reuses Excalidraw and React (MIT), Vite (MIT), the GCC container/toolchain, and Python. The curated stack header adapts the implementation in the project notes. Excalidraw integration follows its [official API documentation](https://docs.excalidraw.com/docs/@excalidraw/excalidraw/api/excalidraw-element-skeleton).
 
 ## Limits and next steps
 

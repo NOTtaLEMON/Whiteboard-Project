@@ -1,6 +1,6 @@
 # Boardroom: Technical Stack and Project Overview
 
-This document describes the implementation currently in `whiteboard-code-verifier/`. The original concept is recorded in `../../whiteboard-code-verifier.md`; some of its proposed features remain future work.
+This document describes the implementation currently in `whiteboard-code-verifier/`. The original concept is recorded in `../../docs/ORIGINAL_NOTES.md`; some of its proposed features remain future work.
 
 ## 1. Purpose and target user
 

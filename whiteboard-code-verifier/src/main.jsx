@@ -17,7 +17,12 @@ import ProgramRegions from './components/ProgramRegions.jsx';
 import WorkspaceLayout from './components/WorkspaceLayout.jsx';
 import SnapshotHistory from './components/SnapshotHistory.jsx';
 import TestCases from './components/TestCases.jsx';
-import { readApiJson, apiFetch, setOwnerKey } from './lib/api.js';
+import Icon from './components/Icon.jsx';
+import OwnerKeyForm from './components/OwnerKeyForm.jsx';
+import OutputPanel from './components/OutputPanel.jsx';
+import SnippetReview from './components/SnippetReview.jsx';
+import LibraryPanel from './components/LibraryPanel.jsx';
+import { readApiJson, apiFetch } from './lib/api.js';
 import stackHeader from '../runner/lib/stack.h?raw';
 import listHeader from '../runner/lib/linked_list.h?raw';
 import queueHeader from '../runner/lib/queue.h?raw';
@@ -27,59 +32,7 @@ import './styles.css';
 const libraryCatalog = [...libraries, ...standardLibraries];
 const bundledHeaders = { 'stack.h': stackHeader, 'linked_list.h': listHeader, 'queue.h': queueHeader, 'search.h': searchHeader };
 
-const labels = {
-  success: 'Program completed', compile_error: 'Check the syntax', runtime_error: 'A runtime issue surfaced',
-  timeout: 'Time limit reached', output_limit: 'Output limit reached', invalid_source: 'Check the source',
-};
 const EMPTY_PROGRAM = { source: '', stdin: '', codeIds: [], inputIds: [], lineMap: [] };
-
-function Icon({ name, size = 18 }) {
-  const paths = {
-    play: <path d="m8 5 11 7-11 7Z" />,
-    board: <><rect x="3" y="3" width="18" height="14" rx="2" /><path d="m8 21 4-4 4 4M8 8h8M8 12h5" /></>,
-    download: <><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4" /></>,
-    upload: <><path d="M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4" /></>,
-    arrow: <path d="m9 5 7 7-7 7" />,
-    check: <path d="m5 12 4 4L19 6" />,
-    code: <><path d="m7 7-5 5 5 5m10-10 5 5-5 5m-3-14-4 22" /></>,
-    region: <><rect x="4" y="4" width="16" height="16" rx="2" strokeDasharray="3 3" /><path d="m13 13 6 6" /></>,
-    page: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></>,
-    expand: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
-    save: <><path d="M5 4h12l2 2v14H5z" /><path d="M8 4v5h8V4M8 20v-6h8v6" /></>,
-    panel: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M15 4v16" /></>,
-    zoomIn: <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35M11 8v6M8 11h6" /></>,
-    zoomOut: <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35M8 11h6" /></>,
-    fit: <><path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6" /></>,
-    plus: <path d="M12 5v14M5 12h14" />,
-    moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />,
-    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
-    trash: <><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>,
-    dual: <><rect x="2" y="3" width="9" height="18" rx="2" /><rect x="13" y="3" width="9" height="18" rx="2" /></>,
-  };
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths.code}</svg>;
-}
-
-function MemoryDiagram({ stdout }) {
-  const pointer = stdout.match(/^Pointer on stack: (0x[\da-f]+)$/im)?.[1];
-  const buffer = stdout.match(/^Buffer address: (0x[\da-f]+)$/im)?.[1];
-  if (!pointer || !buffer) return null;
-  return <figure className="memory-diagram" aria-label="Memory addresses printed by the program">
-    <figcaption className="eyebrow">MEMORY IN THIS RUN</figcaption>
-    <div className="memory-location"><span>STACK · POINTER VARIABLE</span><code>{pointer}</code><small>The address of <code>values</code></small></div>
-    <div className="memory-link" aria-hidden="true">↓ points to</div>
-    <div className="memory-location allocation"><span>DYNAMIC STORAGE · BUFFER</span><code>{buffer}</code><small>The address returned by <code>malloc</code></small></div>
-    <p>Addresses are printed by this program. Sanitizers change allocation layout; these are not glibc region classifications.</p>
-  </figure>;
-}
-
-// Shown only to the site owner's browser when the API is locked: the key is checked by the server, not here.
-function OwnerKeyForm({ onSaved }) {
-  const [value, setValue] = useState('');
-  return <form className="owner-key" onSubmit={(event) => { event.preventDefault(); setOwnerKey(value.trim()); setValue(''); onSaved(); }}>
-    <input type="password" aria-label="Owner key" placeholder="Owner key" autoComplete="off" value={value} onChange={(event) => setValue(event.target.value)} />
-    <button type="submit" disabled={!value.trim()}>Unlock</button>
-  </form>;
-}
 
 function App() {
   const initial = useMemo(() => [], []);
@@ -939,37 +892,14 @@ function App() {
                 setNotice(ink ? 'Saved board opened. Review its handwriting again before running. The confirmed source is also stored in the snapshot source file.' : 'Saved board opened. Run it to verify the saved code.');
               }} />}
               {tab === 'output' && <>
-                {stale && <div className="stale-notice">{edited !== null ? 'The code changed. Run again to update these results.' : 'The board changed. Run again to update these results.'}</div>}
-                {!result && !running && <div className="empty-state"><div className="terminal-glyph">&gt;_</div><h3>Let the code do the talking.</h3><p>Output appears here. Errors are underlined in the code above.</p><span>{language === 'python' ? 'Python interpreter' : 'C++ compiler'} · real output</span></div>}
-                {running && <div className="empty-state" role="status"><div className="terminal-glyph">…</div><h3>{phase === 'prepare' ? 'Preparing the program' : 'Testing the lesson'}</h3><p>{phase === 'prepare' ? 'The local model is adding the boilerplate. This can take up to a minute on a CPU.' : `Checking ${languageLabel} and running the program.`}</p></div>}
-                {result && <div aria-live="polite"><div className={`result-status ${result.status === 'success' ? 'passed' : 'failed'}`}><span>{result.status === 'success' ? '✓' : '!'}</span><strong>{labels[result.status] ?? result.status}</strong><small>{result.durationMs} ms</small></div>
-                  <div className="terminal"><div className="terminal-title"><span>STDOUT</span><span>exit {result.exitCode ?? '—'}</span></div><pre>{result.stdout || '(no output)'}</pre></div>
-                  {language === 'c' && <MemoryDiagram stdout={result.stdout} />}
-                  {result.transformed && <p className="panel-help">This output comes from the prepared program (built from your drawing or snippet). Diagnostic line numbers refer to that program.</p>}
-                  {result.diagnostics.length > 0 && <div className="diagnostics"><h3>What the tools found</h3>{result.diagnostics.map((diagnostic, index) => <button key={index} className={`diagnostic ${diagnostic.severity}`} disabled={Boolean(stale) || result.transformed} onClick={() => focusDiagnostic(diagnostic)}><span className="line-number">L{diagnostic.line}</span><span><b>{diagnostic.kind} · {diagnostic.severity}</b>{diagnostic.message}</span><Icon name="arrow" size={14} /></button>)}</div>}
-                  {result.notes.map((note) => <article className="teaching-note" key={note.title}><span className="eyebrow">TEACHING NOTE</span><h3>{note.title}</h3><p>{note.body}</p></article>)}
-                  {(result.stderr || result.compilerOutput) && <details className="raw-output"><summary>Full compiler & runtime messages</summary><pre>{[result.compilerOutput, result.stderr].filter(Boolean).join('\n')}</pre></details>}
-                </div>}
-                {currentDraft && <section className="snippet-review" aria-label="Prepared program">
-                  <h3>Prepared program</h3>
-                  {currentDraft.warning ? <p className="error-notice" role="alert">{currentDraft.warning}</p> : <p className="panel-help">Each of your lines is still there, in order and unchanged. Read the program, then confirm.</p>}
-                  <pre className="library-source" aria-label="Prepared C++ program">{currentDraft.source}</pre>
-                  <div className="snippet-actions">
-                    <button className="quiet-button" onClick={confirmSnippet} disabled={running || reading || !health?.available}>{currentDraft.confirmed ? 'Run again' : 'Confirm & run'}</button>
-                    <button className="quiet-button" onClick={() => setSnippetDraft(null)} disabled={running || reading}>Discard</button>
-                  </div>
-                  <p className="ocr-provenance">{currentDraft.provider} · {currentDraft.model} · {currentDraft.durationMs} ms</p>
-                </section>}
+                <OutputPanel result={result} stale={stale} edited={edited} running={running} phase={phase}
+                  language={language} languageLabel={languageLabel} focusDiagnostic={focusDiagnostic} />
+                {currentDraft && <SnippetReview currentDraft={currentDraft} running={running} reading={reading} health={health}
+                  confirmSnippet={confirmSnippet} setSnippetDraft={setSnippetDraft} />}
               </>}
-              {tab === 'library' && <div className="library-panel">
-                <label className="field-label" htmlFor="library-select">C++ LIBRARIES</label>
-                <select id="library-select" className="frame-select" value={libraryFile} onChange={(event) => viewLibrary(event.target.value)}>{libraryCatalog.map((item) => <option key={item.file} value={item.file}>{item.title} · {item.file}</option>)}</select>
-                <h3>{library.title}</h3><p className="panel-help">{library.description}</p>
-                <p className="library-methods">{library.methods}</p>
-                <p className="panel-help">Include with <code>#include &lt;{libraryFile}&gt;</code>. {standardLibraries.includes(library) ? 'Built into the C++ toolchain. The code below is a runnable usage example.' : 'This is a project-provided teaching header compiled by the runner.'}</p>
-                <button className="quiet-button" disabled={running || reading || !api} onClick={() => { chooseLesson(library.lessonId); setTab('output'); }}>Load example on board</button>
-                <pre className="library-source">{librarySources[libraryFile] || `Loading ${libraryFile}…`}</pre>
-              </div>}
+              {tab === 'library' && <LibraryPanel library={library} libraryFile={libraryFile} libraryCatalog={libraryCatalog}
+                standardLibraries={standardLibraries} librarySources={librarySources} viewLibrary={viewLibrary}
+                disabled={running || reading || !api} loadExample={() => { chooseLesson(library.lessonId); setTab('output'); }} />}
             </div>
           </aside>
         </WorkspaceLayout>

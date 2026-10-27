@@ -326,4 +326,4 @@ Open http://127.0.0.1:5173. Typed code works without the OCR service; Snippet mo
 | [C libraries](whiteboard-code-verifier/docs/c-libraries.md) | Teaching header APIs |
 | [Vercel deployment](whiteboard-code-verifier/docs/vercel-serverless.md) | Serverless setup |
 | [Docker API deployment](whiteboard-code-verifier/docs/docker-api-deployment.md) | VPS setup |
-| [Original notes](whiteboard-code-verifier.md) | Concept and design history |
+| [Original notes](docs/ORIGINAL_NOTES.md) | Concept and design history |
