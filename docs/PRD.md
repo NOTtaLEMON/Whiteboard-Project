@@ -46,7 +46,6 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 | U6 | I run several inputs | Up to 20 cases with expected status/output, progress and first-mismatch report | Done |
 | U7 | I use teaching data structures | `stack.h`, `linked_list.h`, `queue.h`, `search.h` compile and report contract failures at the teacher's line | Done |
 | U8 | I learn what `malloc`/`free` did | Rule-based teaching notes appear for matching calls; comments and strings are ignored | Done |
-| U9 | I turn an algorithm into a program | Pseudocode levels generate a program with Gemini, shown separately from the drawing | Done |
 | U10 | I keep a record of every lesson | Each run creates a Git commit with board, source, input and replay bundle; History lists the latest 30 | Done |
 | U11 | I replay an old lesson | Frozen runner, vendored headers and SHA-256 manifest rebuild the run offline | Done |
 
@@ -67,7 +66,7 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 | Category | Requirement |
 |---|---|
 | **Security** | No network in the sandbox; read-only filesystem; dropped capabilities; non-root user; memory/CPU/process caps; secrets server-side only (see README section 7) |
-| **Privacy** | No accounts or database; boards leave the browser only on OCR, run or snapshot; handwriting never sent to a third-party API; optional Gemini receives reviewed text only; logs exclude images and transcriptions |
+| **Privacy** | No accounts or database; boards leave the browser only on OCR, run or snapshot; handwriting never sent to a third-party API; no AI API key exists in the project; logs exclude images and transcriptions |
 | **Performance** | Typed code returns a result within the 22 s outer limit; OCR bounded at 50 s |
 | **Reliability** | Outer timeout force-removes containers; snapshot Git failures keep files and warn |
 | **Usability** | Single-screen workflow; typed input as full alternative to handwriting; keyboard-resizable panel |

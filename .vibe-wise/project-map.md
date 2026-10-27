@@ -8,18 +8,18 @@ Hackathon submission by PR: README sections, public repo, ~5 min demo video, 8-s
 
 ## Components (verified from docs/files)
 - src/ (React + Excalidraw UI; board.js, capture.js, handwriting.js, lessons.js, libraries.js)
-- server/ (Node API: index.mjs, ocr.mjs -> Gemini, sandbox.mjs -> Docker, snapshots.mjs -> local git)
+- server/ (Node API: index.mjs, ocr.mjs -> local ocr-service (Qwen2-VL), sandbox.mjs -> Docker, snapshots.mjs -> local git)
 - runner/ (Dockerfile, runner.py, lib/*.h teaching headers)
 - tests/, scripts/, docs/ under whiteboard-code-verifier/
 
 ## Main Flow
-typed/handwritten board -> (OCR via Gemini + teacher confirm, if handwritten) -> POST /api/run -> sandbox.mjs -> Docker container -> runner.py -> GCC (+ASan/UBSan) -> result -> diagnostics highlighted on board
+typed/handwritten board -> (local Qwen2-VL OCR + teacher confirm, if handwritten) -> POST /api/run -> sandbox.mjs -> Docker container -> runner.py -> GCC (+ASan/UBSan) -> result -> diagnostics highlighted on board
 
 ## Data and Trust Boundaries
-No database. GEMINI_API_KEY only in backend .env. Submitted code runs only in locked-down Docker container. Local-only prototype.
+No database. No AI API key; OCR runs locally. Submitted code runs only in locked-down Docker container. Local-only prototype.
 
 ## Build and Deployment
-Verified locally: `npm ci`, `npm run runner:build`, `npm run dev` in whiteboard-code-verifier/ (Node 24, Docker Desktop). Hosted: Vercel from main (Wandbox runner, Gemini); teammates also added Railway config. Gemini model in .env: gemini-3.5-flash-lite (key limit 5/min, 20/day).
+Verified locally: `npm ci`, `npm run runner:build`, `npm run dev` in whiteboard-code-verifier/ (Node 24, Docker Desktop). Hosted: Vercel from main (Wandbox runner); teammates also added Railway config.
 
 ## Unknowns
 Hackathon submission status (video, slides, submission.md); whether C support should return alongside C++.

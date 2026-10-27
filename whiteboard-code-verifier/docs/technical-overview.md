@@ -17,8 +17,8 @@ The teaching goal is to make classroom examples verifiable: demonstrate working 
 | Frontend language | JavaScript ES modules and JSX | Browser application and shared board helpers |
 | Styling | Plain CSS | Responsive page layout, inspector, terminal, review controls, and diagnostic presentation |
 | Development/build | Vite 8.2.2 | Frontend development server, API proxy, and production assets |
-| API runtime | Node.js 22.12+ | HTTP endpoints, validation, Gemini requests, and Docker orchestration |
-| Handwriting recognition | Gemini API; default `gemini-3.6-flash` | Image transcription into structured code/input lines |
+| API runtime | Node.js 22.12+ | HTTP endpoints, validation, OCR-service calls, and Docker orchestration |
+| Handwriting recognition | Pretrained Qwen2-VL 2B Instruct, run locally in `ocr-service/` | Image transcription into code/input lines |
 | Execution boundary | Linux Docker Engine locally; configured Wandbox service on Vercel | Isolated C execution outside the application process |
 | Compiler image | `gcc:14.2.0-bookworm` | GCC toolchain and Debian-based execution environment |
 | Runner implementation | Python 3 standard library | Compilation, input delivery, deadlines, output collection, and diagnostic parsing |
@@ -26,9 +26,9 @@ The teaching goal is to make classroom examples verifiable: demonstrate working 
 | Runtime checks | AddressSanitizer, UndefinedBehaviorSanitizer, and leak detection | Detect supported memory errors, undefined behavior, and leaks during execution |
 | Tests | Node's test runner, Python `unittest`, Playwright 1.64.1 | Unit, compiler, container, and browser checks |
 
-Frontend dependencies are pinned in `package.json` and `package-lock.json`. The Dockerfile pins a compiler image tag, rather than an immutable image digest. Node's API and the Python runner use built-in modules; there is no Express server or Gemini SDK dependency. The backend calls Gemini through `fetch` and its REST API.
+Frontend dependencies are pinned in `package.json` and `package-lock.json`. The Dockerfile pins a compiler image tag, rather than an immutable image digest. Node's API and the Python runner use built-in modules; there is no Express server or AI SDK dependency. The backend calls the local OCR service through `fetch`.
 
-The Vercel deployment also includes same-origin Functions for health, OCR, Gemini pseudocode assistance, and C/Python execution. They are public and require no login or access token. Vercel uses an explicitly configured third-party Wandbox service for execution and the GitHub Git Data API for persistent Snapshot/History storage. `SNAPSHOT_GITHUB_REPOSITORY`, optional `SNAPSHOT_GITHUB_BRANCH`, and a server-only `SNAPSHOT_GITHUB_TOKEN` with Contents read/write configure the archive. Without archive credentials, History shows the missing configuration. See [Vercel serverless deployment](vercel-serverless.md). The Docker implementation below remains the full local/persistent-server mode; its sanitizers and resource limits do not describe the hosted compiler.
+The Vercel deployment also includes same-origin Functions for health, OCR, and C++/Python execution. They are public and require no login or access token. Vercel uses an explicitly configured third-party Wandbox service for execution and the GitHub Git Data API for persistent Snapshot/History storage. `SNAPSHOT_GITHUB_REPOSITORY`, optional `SNAPSHOT_GITHUB_BRANCH`, and a server-only `SNAPSHOT_GITHUB_TOKEN` with Contents read/write configure the archive. Without archive credentials, History shows the missing configuration. See [Vercel serverless deployment](vercel-serverless.md). The Docker implementation below remains the full local/persistent-server mode; its sanitizers and resource limits do not describe the hosted compiler.
 
 ## 3. Architecture and data flow
 
@@ -37,18 +37,14 @@ flowchart TD
     A[Teacher writes on a blank canvas] --> B[Select code and input region]
     B --> C{Contains handwriting?}
     C -->|No| D[Extract literal typed text]
-    C -->|Yes| E[Gemini OCR then teacher confirmation]
-    D --> F[Select level and click run]
+    C -->|Yes| E[Local Qwen2-VL OCR then teacher confirmation]
+    D --> F[Click run]
     E --> F
-    F --> G{Pseudocode level}
-    G -->|1| H[Compile original C and ask Gemini for advice]
-    G -->|2 or 3| I[Gemini completes C or translates an algorithm]
-    I --> J[Compile displayed Gemini C]
-    H --> K[Real output and compiler diagnostics]
-    J --> K
+    F --> G[Compile or run the code exactly as written]
+    G --> H[Real output and compiler diagnostics]
 ```
 
-The browser owns the working scene and its review state. The Node process owns credentials and coordinates external services. The container owns compilation and execution. Gemini receives relevant image crops; it does not decide whether a program is correct. GCC and runtime tools supply the execution evidence.
+The browser owns the working scene and its review state. The Node process owns credentials and coordinates external services. The container owns compilation and execution. The local OCR model receives relevant image crops; it does not decide whether a program is correct. GCC and runtime tools supply the execution evidence.
 
 ## 4. Whiteboard and source extraction
 
@@ -68,13 +64,7 @@ For handwritten channels, `src/capture.js` exports the relevant strokes and any 
 
 The right panel's C/Python radio toggle sets a fixed `c` or `python` value. `src/languages.js` shares supported IDs, source filenames and payload defaults. Omitted language fields retain C behavior. Signatures include Python mode so old C results and pending proposals cannot be reused across language changes. Changing the language clears handwriting confirmation, and saved scenes restore their language; legacy scenes default to C.
 
-The API forwards Python requests to the same isolated Docker runner locally and to Wandbox's configured Python runtime on Vercel. Python syntax checking preserves original line numbers; exception tracebacks map back to board lines. Python uses the same input, output, time, network and container limits as C, with no C header validation or sanitizer claims. Gemini receives Python-specific transcription and assistance instructions at every level. Python snapshots store `board.py` and a language-tagged manifest; replay passes that language to the frozen runner. Existing C snapshots and manifests remain supported.
-
-### Gemini pseudocode levels
-
-`src/pseudocode.js` defines Full program, Snippet, and Algorithm modes. Full program compiles the editor source directly; Snippet wraps it in the selected template. Algorithm explicitly asks Gemini for a complete C++17 or Python demonstration before compiling. A failed run offers an explicit Gemini fix action. Generated and corrected code is displayed separately; the original drawing is retained.
-
-`server/pseudocode.mjs` uses the same Gemini Interactions API, key, and model as OCR. It enforces input/output bounds, validates structured C/explanation/issue fields, and logs only safe duration, quota, and token metadata. `server/gemini-response.mjs` shares bounded response parsing and quota classification with OCR. Both local `/api/pseudocode` and the authenticated Vercel function prepare C without executing it. The browser uses the separate `/api/run` endpoint for execution. Handwritten source must first be transcribed and confirmed. Scene fingerprints prevent a changed board from launching pending generated C; changing the level marks previous output stale. Generated C has its own line numbers and never highlights unrelated board lines. Cases at Levels 2–3 uses the current generated source.
+The API forwards Python requests to the same isolated Docker runner locally and to Wandbox's configured Python runtime on Vercel. Python syntax checking preserves original line numbers; exception tracebacks map back to board lines. Python uses the same input, output, time, network and container limits as C, with no C header validation or sanitizer claims. The OCR prompt is told the selected language. Python snapshots store `board.py` and a language-tagged manifest; replay passes that language to the frozen runner. Existing C snapshots and manifests remain supported.
 
 ## 5. OCR and teacher review
 
@@ -93,9 +83,9 @@ The API waits up to `OCR_TIMEOUT_MS` for the model (default 180 s locally, 50 s 
 
 Recognition and execution are independent endpoints. Reading handwriting or confirming it never launches the compiler. Scene fingerprints tie confirmation to the reviewed frame contents. New or changed ink invalidates confirmation. Immutable scene snapshots prevent Excalidraw's in-place stroke updates from associating a transcription with an outdated scene.
 
-Ambiguity flags are not calibrated confidence scores. Line boxes are model estimates, so handwriting diagnostics identify approximate board regions. The adapter validates text sizes, line counts, coordinate ranges, and response completeness. It requests `store: false`; account-level provider data handling still follows Gemini's applicable terms.
+Ambiguity flags are not calibrated confidence scores. Line boxes are model estimates, so handwriting diagnostics identify approximate board regions. The adapter validates text sizes, line counts, coordinate ranges, and response completeness.
 
-The researched alternatives—Cloud Vision, Mistral OCR, MyScript, PaddleOCR, TrOCR (tried, then replaced), and OpenAI vision—are compared in [OCR options](ocr-options.md). Gemini is the implemented provider; no multi-provider routing or accuracy ranking is implemented.
+The researched alternatives—Cloud Vision, Mistral OCR, MyScript, PaddleOCR, TrOCR (tried, then replaced), and OpenAI vision—are compared in [OCR options](ocr-options.md). The local Qwen2-VL service is the implemented provider; no multi-provider routing or accuracy ranking is implemented.
 
 ## 6. Compilation and execution
 
@@ -154,15 +144,15 @@ Six starter lessons demonstrate input/output, a use-after-free error, an empty-s
 
 OCR permits one request in flight and six attempts per minute, with a 4 MiB request-body limit and a 50-second provider deadline, leaving time to return a JSON error before the hosted function limit. Execution permits two requests in flight and 20 attempts per minute. These limits are process-local and reset when the server restarts.
 
-OCR failures include safe diagnostic metadata in the API response and an expandable UI panel. The backend logs `[ocr:gemini]` records with HTTP status, duration, quota classification, and numeric per-request token usage on success. Provider-reported token limits, generic quota/rate limits, and depleted credits are distinguished; a timeout leaves quota status unknown. Logs omit credentials, images, transcriptions, and raw error payloads. Remaining project quota must be checked in AI Studio.
+OCR failures include safe diagnostic metadata in the API response and an expandable UI panel. The backend logs `[ocr:local]` records with the model, duration and HTTP status. Logs omit images and transcriptions.
 
-The server binds to loopback and checks request hosts and origins. Hosted frontends configure an HTTPS reverse proxy and exact `BOARDROOM_APP_ORIGIN`. API access is public; browser requests omit credentials, and the previous `BOARDROOM_API_TOKEN` setting is ignored. Only the public API origin uses a `VITE_` build variable. Gemini and GitHub keys stay in server-only environment settings and are never mounted into execution containers. `PORT` overrides the API default of 8787. Health indicates configured credentials, not guaranteed provider availability. See [Docker API deployment](docker-api-deployment.md).
+The server binds to loopback and checks request hosts and origins. Hosted frontends configure an HTTPS reverse proxy and exact `BOARDROOM_APP_ORIGIN`. API access is public; browser requests omit credentials, and the previous `BOARDROOM_API_TOKEN` setting is ignored. Only the public API origin uses a `VITE_` build variable. The GitHub token stays in server-only environment settings and are never mounted into execution containers. `PORT` overrides the API default of 8787. Health indicates configured credentials, not guaranteed provider availability. See [Docker API deployment](docker-api-deployment.md).
 
 OCR now requests low thinking and compact `{text, uncertain}` lines. It preserves the review API shape with null geometry and empty alternatives for text-only responses. Teacher review and editor diagnostics remain available; current text-only recognition supplies no canvas line positions. Live paired speed/accuracy verification is pending available provider quota.
 
 ## 9. Storage and repository organization
 
-After each completed execution response, the client automatically archives the full canvas captured just before that run. Each input case creates a separate snapshot. `scene.verifier.execution` records the submitted language, source, stdin, level, run/case kind, and browser-reported result. Shared snapshot validation checks this metadata and retains handwriting-review requirements. Replay files and vendored headers follow the submitted source, including editor/template/Gemini changes; `board.excalidraw` retains all original frames, strokes, annotations and assets. Failures are visible independently of compiler results. This is an archive of completed responses, not a persistent offline retry queue.
+After each completed execution response, the client automatically archives the full canvas captured just before that run. Each input case creates a separate snapshot. `scene.verifier.execution` records the submitted language, source, stdin, level, run/case kind, and browser-reported result. Shared snapshot validation checks this metadata and retains handwriting-review requirements. Replay files and vendored headers follow the submitted source, including editor changes; `board.excalidraw` retains all original frames, strokes, annotations and assets. Failures are visible independently of compiler results. This is an archive of completed responses, not a persistent offline retry queue.
 
 The hosted adapter in `server/github-snapshots.mjs` shares validation and replay-bundle preparation with the disk store. It creates a Git tree based on the latest branch commit, creates one commit for the entire folder, and advances only the archive branch without force. Conflicting saves retry against the winning parent. Reads and comparisons use GitHub commit references, so no warm function, background queue, or temporary disk is required. The token stays server-side, and all classroom users share the same archive. Lesson visibility follows repository visibility. Vercel Git deployments are disabled for `boardroom-lessons`.
 
@@ -176,7 +166,7 @@ Existing three-file snapshots remain readable. Opening History restores an edita
 
 ```text
 src/                 React UI, board extraction, capture, review, and overlays
-server/              HTTP API, Gemini adapter, and Docker orchestration
+server/              HTTP API, OCR-service client, and Docker orchestration
 runner/              Dockerfile, Python runner, and trusted C header
 scripts/             Development launcher, font setup, and smoke checks
 tests/               Node/Python tests, browser checks, and synthetic OCR sample
@@ -205,9 +195,9 @@ Development serves the frontend at `http://127.0.0.1:5173` and the API at `http:
 | `npm test` | Node API/mapping/OCR tests and Python runner tests using fixed repository-owned C fixtures |
 | `npm run test:docker` | Actual container lessons, EOF handling, timeout, output limits, and leak detection |
 | `npm run test:browser` | Production frontend, review workflow, import/export, responsive layout, and real Docker runs |
-| `npm run test:ocr -- tests/fixtures/ocr/synthetic-code.png` | Opt-in live Gemini request; prints unconfirmed text without executing it |
-| `npm run benchmark:ocr -- /path/to/private/manifest.json` | Opt-in live Gemini measurements against private classroom samples |
+| `npm run test:ocr -- tests/fixtures/ocr/synthetic-code.png` | Reads one PNG through the running OCR service; prints unconfirmed text without executing it |
+| `npm run benchmark:ocr -- /path/to/private/manifest.json` | Opt-in OCR measurements against private classroom samples |
 
-Implementation verification passed 84 Node/Python tests and 43 browser tests; the Docker runner also passes its dedicated execution checks. Coverage includes pointer/keyboard panel resizing, browser fullscreen, a 151-line program with input contained in its expanded frame, public and committed header browsing, multiple input cases, all six examples, and saving/reopening real Git-backed snapshots. Snapshot failure cases preserve written files and unrelated staged application changes. The browser suite stubs OCR and Gemini code assistance explicitly, while using real Docker execution. A separate live Gemini check faithfully transcribed a seven-line synthetic handwriting-style sample, including its intentional missing `&` and semicolon. A live browser check also exercised capture, Gemini, teacher correction/confirmation, and Docker execution with stdout `3`.
+Implementation verification passed 84 Node/Python tests and 43 browser tests; the Docker runner also passes its dedicated execution checks. Coverage includes pointer/keyboard panel resizing, browser fullscreen, a 151-line program with input contained in its expanded frame, public and committed header browsing, multiple input cases, all six examples, and saving/reopening real Git-backed snapshots. Snapshot failure cases preserve written files and unrelated staged application changes. The browser suite stubs the OCR service explicitly, while using real Docker execution. A separate check read a hand-drawn C++ sample through the local Qwen2-VL service and returned every line exactly (about 28 seconds on a laptop CPU).
 
-These results establish the working integration. The new benchmark command computes character, line, and critical-symbol errors from private sample images and gold transcriptions, plus optional teacher-reported correction time; no genuine classroom samples have been provided or measured. Other material limits are restricted includes, approximate handwriting highlights, unbenchmarked Gemini code-generation quality, browser-local input suites, no collaboration or individual authentication, and no public multi-tenant deployment. Caveman gateway observability is not connected in the current implementation.
+These results establish the working integration. The new benchmark command computes character, line, and critical-symbol errors from private sample images and gold transcriptions, plus optional teacher-reported correction time; no genuine classroom samples have been provided or measured. Other material limits are restricted includes, approximate handwriting highlights, browser-local input suites, no collaboration or individual authentication, and no public multi-tenant deployment. Caveman gateway observability is not connected in the current implementation.

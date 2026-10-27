@@ -1,4 +1,3 @@
-import { readLimited, parseApiKeys } from './gemini-response.mjs';
 import { validLanguage } from '../src/languages.js';
 import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
@@ -7,7 +6,6 @@ import { fileURLToPath } from 'node:url';
 const ENV_FILE = fileURLToPath(new URL('../.env', import.meta.url));
 const DEFAULT_OCR_URL = 'http://127.0.0.1:8788';
 const DEFAULT_OCR_MODEL = 'Qwen/Qwen2-VL-2B-Instruct';
-const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
 export const OCR_BODY_LIMIT = 4 * 1024 * 1024;
 
 // Handwriting recognition runs on a pretrained vision-language model (Qwen2-VL) in the local ocr-service/.
@@ -34,18 +32,20 @@ export function ocrConfiguration(env = process.env) {
   };
 }
 
-// Gemini is still used for optional pseudocode help, but no longer for reading handwriting.
-export function geminiConfiguration(env = process.env) {
-  const keys = parseApiKeys(env);
-  return {
-    available: keys.length > 0,
-    provider: 'gemini', model: env.GEMINI_MODEL?.trim() || env.OCR_MODEL?.trim() || DEFAULT_GEMINI_MODEL,
-    message: keys.length > 0 ? undefined : 'Set GEMINI_API_KEY on the API host, then redeploy or restart it.',
-  };
-}
-
 export function loadOcrEnvironment() {
   if (existsSync(ENV_FILE)) loadEnvFile(ENV_FILE);
+}
+
+// Read a JSON response body, refusing anything larger than the limit.
+async function readLimited(response, limit = 256 * 1024) {
+  let size = 0;
+  const chunks = [];
+  for await (const chunk of response.body) {
+    size += chunk.length;
+    if (size > limit) throw new Error('The handwriting model response exceeded its size limit.');
+    chunks.push(chunk);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
 function fail(message, status = 400, code = 'invalid_ocr_request') {

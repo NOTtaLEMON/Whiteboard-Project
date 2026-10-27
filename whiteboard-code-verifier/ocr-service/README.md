@@ -1,6 +1,6 @@
 # Boardroom OCR service
 
-Reads handwriting with a **pretrained vision-language model, [Qwen2-VL 2B Instruct](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct)** (Apache-2.0, Hugging Face). It replaces the Gemini API for handwriting: board images never leave your machine, and nothing is fine-tuned.
+Reads handwriting with a **pretrained vision-language model, [Qwen2-VL 2B Instruct](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct)** (Apache-2.0, Hugging Face). Board images never leave your machine, no API key is needed, and nothing is fine-tuned.
 
 ## How it works
 

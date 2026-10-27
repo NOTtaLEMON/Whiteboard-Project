@@ -1,5 +1,5 @@
 import { authorize, sendJson } from '../server/hosted-api.mjs';
-import { ocrConfiguration, geminiConfiguration } from '../server/ocr.mjs';
+import { ocrConfiguration } from '../server/ocr.mjs';
 import { hostedRunnerHealth } from '../server/hosted-runner.mjs';
 import { validLanguage } from '../src/languages.js';
 import { githubSnapshotConfiguration } from '../server/github-snapshots.mjs';
@@ -13,7 +13,6 @@ export default async function handler(req, res) {
     service: 'whiteboard-code-verifier', access: 'public',
     runner: await hostedRunnerHealth({ language }),
     ocr: ocrConfiguration(),
-    gemini: geminiConfiguration(),
     snapshots: githubSnapshotConfiguration(),
   });
 }

@@ -34,7 +34,7 @@ test('public API health enables running without login controls or credentials', 
 
 test('a serverless API keeps C and handwriting available while explaining history storage', async ({ page }) => {
   await page.route('**/api/health', (route) => route.fulfill({ json: {
-    runner: { available: true, engine: 'wandbox' }, ocr: { available: true, provider: 'gemini' },
+    runner: { available: true, engine: 'wandbox' }, ocr: { available: true, provider: 'local-vlm' },
     snapshots: { available: false },
   } }));
   await page.goto('/');

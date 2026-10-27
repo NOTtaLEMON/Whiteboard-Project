@@ -147,7 +147,7 @@ const HandwritingPanel = forwardRef(function HandwritingPanel({
         <button className="quiet-button" disabled={!acknowledged || Boolean(stale) || busy} onClick={() => confirm(true)}>Save input as test case</button>
         <p className="panel-help">Scan new blue input for each run, or save scans as separate cases in this browser. Code is preserved. {!draft.code.length && 'Read and confirm the code before using input for a run.'}</p>
       </> : <button className="ocr-confirm-button" disabled={!acknowledged || Boolean(stale) || busy} onClick={() => confirm()}>Use confirmed code</button>}
-      <p className="panel-help">Confirmation keeps the original ink. Use the run button at your selected pseudocode level to compile.</p>
+      <p className="panel-help">Confirmation keeps the original ink. Use the run button to compile.</p>
     </>}
   </section>;
 });

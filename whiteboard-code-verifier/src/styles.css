@@ -193,16 +193,6 @@ pre { margin: 0; font: 11px/1.7 'SFMono-Regular', Consolas, 'Liberation Mono', m
 .page-footer > span:first-child { display: flex; align-items: center; gap: 6px; }
 @media (max-width: 360px) { .brand > span:last-child { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
-.pseudocode-panel { margin: 16px 0; padding: 13px; border: 1px solid #dfe7d0; border-radius: 6px; background: #f7f9f3; }
-.pseudocode-panel h3 { margin: 0 0 7px; font-size: 12px; }
-.pseudocode-panel input[type=range] { width: 100%; accent-color: #23563f; cursor: pointer; }
-.pseudocode-stops { display: flex; justify-content: space-between; gap: 8px; color: #64765b; font-size: 10px; margin: 5px 0 12px; }
-.pseudocode-panel .panel-help { margin-bottom: 0; }
-.pseudocode-panel > .quiet-button, .pseudocode-review .quiet-button { margin: 8px 8px 0 0; }
-.pseudocode-review { margin-top: 14px; }
-.pseudocode-review .code-editor { min-height: 220px; }
-.pseudocode-issues { margin: 10px 0; font-size: 11px; line-height: 1.5; color: #6b4d23; }
-.pseudocode-issues ul { padding-left: 18px; margin: 5px 0; }
 .snapshot-comparison { margin-top: 1rem; padding: 1rem; border: 1px solid #d8e1e9; border-radius: 12px; background: #f8fafc; }
 .library-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: .75rem; }
 .library-comparison pre { max-height: 22rem; overflow: auto; padding: .75rem; background: white; border: 1px solid #d8e1e9; border-radius: 6px; font-size: .75rem; }
@@ -355,26 +345,7 @@ pre { margin: 0; font: 11px/1.7 'SFMono-Regular', Consolas, 'Liberation Mono', m
 .draw-colors .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #c9d2c2; padding: 0; cursor: pointer; }
 .draw-colors .swatch.selected { box-shadow: 0 0 0 2px #23563f; }
 
-/* Code mode slider: a pill track with a sliding knob, the three mode names, and a one-line description. */
-.mode-control { gap: 12px; }
-.mode-slider { position: relative; width: 300px; display: grid; gap: 4px; }
-.mode-slider input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 34px; margin: 0; border-radius: 17px; cursor: pointer;
-  background: linear-gradient(90deg, #cfe6d3 0%, #8cc29a calc(var(--mode) * 50%), #e9ede5 calc(var(--mode) * 50%)); box-shadow: inset 0 2px 4px #0000001a; }
-.mode-slider input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 54px; height: 30px; border-radius: 15px; background: #fff; border: 0;
-  box-shadow: 0 2px 6px #1e2a2440, inset 0 0 0 1px #d7ddd2; background-image: linear-gradient(#23563f, #23563f); background-size: 3px 12px; background-repeat: no-repeat; background-position: center; }
-.mode-slider input[type=range]::-moz-range-thumb { width: 54px; height: 30px; border-radius: 15px; background: #fff; border: 0; box-shadow: 0 2px 6px #1e2a2440; }
-.mode-slider input[type=range]:disabled { opacity: .6; cursor: default; }
-.mode-stops { display: flex; justify-content: space-between; font-size: 11px; color: #7a8571; }
-.mode-stops span { cursor: pointer; user-select: none; }
-.mode-stops span.on { color: #1e5542; font-weight: 700; }
-.mode-text { margin: 0; display: grid; gap: 2px; max-width: 230px; font-size: 11px; line-height: 1.35; color: #64765b; }
-.mode-text strong { font-size: 13px; color: #1e5542; }
 
-/* Gemini fix offer: only after a failed run. */
-.fix-callout { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 12px; border: 1px solid #c9d8f0; border-radius: 8px; background: #f2f6fd; }
-.fix-callout p { margin: 0; font-size: 12px; color: #3d5478; }
-.fix-button { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 14px; border: 1px solid #2f5fb0; border-radius: 8px; background: #2f5fb0; color: #fff; font-size: 13px; font-weight: 600; }
-.fix-button:hover:not(:disabled) { background: #244c8f; }
 
 /* Dark mode: the board uses Excalidraw's dark theme; the app chrome swaps its surfaces here. */
 .app-shell[data-theme='dark'] { background: #121614; color: #e3e8e0; }
@@ -402,8 +373,6 @@ pre { margin: 0; font: 11px/1.7 'SFMono-Regular', Consolas, 'Liberation Mono', m
 [data-theme='dark'] .width-dot i { background: #dfe9da; }
 [data-theme='dark'] .draw-tool:hover, [data-theme='dark'] .width-dot:hover { background: #2a332c; }
 [data-theme='dark'] .draw-tool.active, [data-theme='dark'] .width-dot.active { background: #2f4a37; border-color: #5f8f69; color: #e9f4e6; }
-[data-theme='dark'] .fix-callout { background: #1c2536; border-color: #33466b; }
-[data-theme='dark'] .fix-callout p { color: #b9c9e6; }
 [data-theme='dark'] .badge { background: #233428; border-color: #3f6a4a; color: #b6dcbd; }
 [data-theme='dark'] .builder, [data-theme='dark'] .builder-foot { background: #1a201c; border-color: #39433b; color: #e3e8e0; }
 [data-theme='dark'] .chip, [data-theme='dark'] .zone li { background: #232a25; color: #e3e8e0; border-color: #39433b; }

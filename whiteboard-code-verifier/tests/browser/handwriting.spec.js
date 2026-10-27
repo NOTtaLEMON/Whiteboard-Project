@@ -11,10 +11,6 @@ const fixtureLine = (text, index, extra = {}) => ({
 });
 
 async function configureProviderFixture(page) {
-  await page.route('**/api/pseudocode', (route) => route.fulfill({ json: {
-    source: route.request().postDataJSON().source, level: 1, explanation: 'Provider fixture.', issues: [],
-    provider: 'test-fixture', model: 'fixture-only', durationMs: 1,
-  } }));
   const response = await page.request.get('/api/health');
   const data = await response.json();
   expect(data.runner.available, data.runner.message).toBe(true);
@@ -51,7 +47,6 @@ test('a hosting timeout page becomes an OCR timeout with unknown quota and never
   await importBoard(page, file);
   await page.getByRole('button', { name: 'Read & review handwriting' }).click();
   await expect(page.locator('.handwriting-panel')).toContainText('Handwriting recognition timed out at the hosting service (HTTP 504)');
-  await expect(page.locator('.handwriting-panel')).toContainText('Gemini token/quota status is unknown');
   await expect(page.locator('.handwriting-panel')).not.toContainText('JSON.parse');
   expect(runs).toBe(0);
 });
@@ -156,7 +151,7 @@ test('shows a provider failure without executing unreviewed code', async ({ page
   await configureProviderFixture(page);
   let runs = 0;
   page.on('request', (request) => { if (request.url().endsWith('/api/run')) runs += 1; });
-  await page.route('**/api/ocr', (route) => route.fulfill({ status: 502, json: { error: 'Gemini rejected the API key or model access. (HTTP 403)' } }));
+  await page.route('**/api/ocr', (route) => route.fulfill({ status: 502, json: { error: 'The handwriting model could not process this board image. (HTTP 403)' } }));
   await page.goto('/');
   await page.getByLabel('Demo lesson').selectOption('sum');
   await page.getByRole('button', { name: '+ Blank canvas' }).click();
@@ -168,31 +163,25 @@ test('shows a provider failure without executing unreviewed code', async ({ page
   expect(runs).toBe(0);
 });
 
-for (const scenario of [
-  { status: 429, quotaStatus: 'token_limit_reached', error: 'Gemini reports a token quota limit was reached. (HTTP 429)' },
-  { status: 504, quotaStatus: 'unknown', error: 'Gemini OCR timed out. Token/quota exhaustion is unconfirmed.' },
-]) {
-  test(`shows Gemini ${scenario.quotaStatus} diagnostics without executing code`, async ({ page }) => {
-    await configureProviderFixture(page);
-    let runs = 0;
-    page.on('request', (request) => { if (request.url().endsWith('/api/run')) runs += 1; });
-    await page.route('**/api/ocr', (route) => route.fulfill({ status: scenario.status, json: {
-      error: scenario.error,
-      diagnostic: { provider: 'gemini', quotaStatus: scenario.quotaStatus, httpStatus: scenario.status === 429 ? 429 : null },
-    } }));
-    await page.goto('/');
+test('shows handwriting model timeout diagnostics without executing code', async ({ page }) => {
+  await configureProviderFixture(page);
+  let runs = 0;
+  page.on('request', (request) => { if (request.url().endsWith('/api/run')) runs += 1; });
+  await page.route('**/api/ocr', (route) => route.fulfill({ status: 504, json: {
+    error: 'The handwriting model timed out after 180 seconds. Try a smaller selection.',
+    diagnostic: { provider: 'local-vlm', reason: 'timeout', httpStatus: null },
+  } }));
+  await page.goto('/');
   await page.getByLabel('Demo lesson').selectOption('sum');
-    await page.getByRole('button', { name: '+ Blank canvas' }).click();
+  await page.getByRole('button', { name: '+ Blank canvas' }).click();
   await selectWritingRegion(page);
-    await drawStroke(page);
-    await page.getByRole('button', { name: 'Read & review handwriting' }).click();
-    await expect(page.getByRole('alert')).toHaveText(scenario.error);
-    await page.getByText('Gemini OCR diagnostics', { exact: true }).click();
-    await expect(page.locator('.handwriting-panel .raw-output pre')).toContainText(scenario.quotaStatus);
-    await expect(page.getByRole('link', { name: 'Check Gemini usage and limits in AI Studio' })).toHaveAttribute('href', 'https://aistudio.google.com/usage');
-    expect(runs).toBe(0);
-  });
-}
+  await drawStroke(page);
+  await page.getByRole('button', { name: 'Read & review handwriting' }).click();
+  await expect(page.getByRole('alert')).toContainText('timed out');
+  await page.getByText('Handwriting model diagnostics', { exact: true }).click();
+  await expect(page.locator('.handwriting-panel .raw-output pre')).toContainText('timeout');
+  expect(runs).toBe(0);
+});
 
 test('ink changed during recognition cannot be confirmed or executed', async ({ page }) => {
   await configureProviderFixture(page);
@@ -449,37 +438,3 @@ test('new strokes invalidate an input scan and a full case suite rejects an extr
 });
 
 
-test('scanned cases use the prepared C++ program in the latest snippet flow', async ({ page }) => {
-  await configureProviderFixture(page);
-  const source = 'int a, b;\nscanf("%d %d", &a, &b);\nprintf("%d\\n", a + b);';
-  const runs = [];
-  page.on('request', request => { if (request.url().endsWith('/api/run')) runs.push(request.postDataJSON()); });
-  await page.route('**/api/ocr', route => route.fulfill({ json: { provider: 'test-fixture', model: 'fixture-only', durationMs: 1,
-    code: [], stdin: [fixtureLine('7 8', 0)] } }));
-  await page.route('**/api/pseudocode', route => {
-    const body = route.request().postDataJSON();
-    expect(body.structure).toBe(true);
-    return route.fulfill({ json: { source: `int main() {\n${body.source}\nreturn 0;\n}`, explanation: 'Organized fixture.', issues: [],
-      level: 2, structure: true, provider: 'test-fixture', model: 'fixture-only', durationMs: 1 } });
-  });
-  await page.goto('/');
-  await importBoard(page, inputScanBoard({ codeInk: false, source }));
-  await page.getByRole('button', { name: 'Show panel', exact: true }).click();
-  const slider = page.getByRole('slider', { name: 'Code mode' });
-  await slider.focus(); await slider.press('Home'); await slider.press('ArrowRight');
-  await page.getByRole('button', { name: 'Scan input', exact: true }).click();
-  await expect(page.getByLabel('Input line 1', { exact: true })).toHaveValue('7 8');
-  await page.getByRole('checkbox', { name: 'I checked the input against the handwriting.' }).check();
-  await page.getByRole('button', { name: 'Save input as test case', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Run 1 case', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: 'Verify & run', exact: true }).click();
-  await expect(page.locator('.terminal pre')).toHaveText('15\n');
-  await page.getByRole('tab', { name: 'Cases', exact: true }).click();
-  await page.getByRole('button', { name: 'Run 1 case', exact: true }).click();
-  await expect(page.locator('.case-results')).toContainText('15');
-  await expect(page.getByRole('button', { name: 'Run 1 case', exact: true })).toBeEnabled();
-  expect(runs).toHaveLength(2);
-  expect(runs[1].source).toBe(runs[0].source);
-  expect(runs[1].stdin).toBe('7 8');
-  expect(runs[1].source).toContain('int main()');
-});

@@ -8,19 +8,18 @@ function response(body, status, path = '/api/ocr') {
   return result;
 }
 
-test('API parsing preserves structured success and provider quota errors', async () => {
+test('API parsing preserves structured success and error diagnostics', async () => {
   for (const [status, data] of [[200, { code: [], stdin: [] }], [429, {
-    error: 'Token limit reached', diagnostic: { quotaStatus: 'token_limit_reached' },
+    error: 'The handwriting model timed out.', diagnostic: { provider: 'local-vlm', reason: 'timeout' },
   }]]) assert.deepEqual(await readApiJson(response(JSON.stringify(data), status)), data);
 });
 
-test('hosting HTML and text timeouts produce actionable errors without claiming token exhaustion', async () => {
+test('hosting HTML and text timeouts produce actionable errors without leaking gateway details', async () => {
   for (const body of ['<!doctype html><h1>private gateway details</h1>', 'FUNCTION_INVOCATION_TIMEOUT']) {
     await assert.rejects(readApiJson(response(body, 504)), (error) => {
       assert.match(error.message, /Handwriting recognition timed out/);
       assert.match(error.message, /HTTP 504/);
-      assert.match(error.message, /quota status is unknown/);
-      assert.deepEqual(error.diagnostic, { provider: 'gemini', reason: 'host_timeout', httpStatus: 504, quotaStatus: 'unknown' });
+      assert.deepEqual(error.diagnostic, { provider: 'local-vlm', reason: 'host_timeout', httpStatus: 504 });
       assert.ok(!error.message.includes(body));
       return true;
     });

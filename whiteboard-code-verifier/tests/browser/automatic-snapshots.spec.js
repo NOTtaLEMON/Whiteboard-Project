@@ -9,9 +9,9 @@ const success = { status: 'success', stdout: '8\n', stderr: '', compilerOutput: 
 const savedResponse = page => page.waitForResponse(response => response.url().endsWith('/api/snapshots') && response.request().method() === 'POST');
 const savedFile = (snapshot, name) => readFile(join(archive, snapshot.id, name), 'utf8');
 
-async function prepare(page, language = 'c', gemini = false) {
+async function prepare(page, language = 'c') {
   await page.route('**/api/health*', route => route.fulfill({ json: {
-    runner: { available: true }, ocr: { available: gemini }, snapshots: { available: true },
+    runner: { available: true }, ocr: { available: false }, snapshots: { available: true },
   } }));
   await page.goto('/');
   const original = language === 'c' ? 'int main(void) { return 0; }' : 'print(0)';
@@ -65,26 +65,6 @@ for (const language of ['c', 'python']) {
     await expect(page.getByRole('tab', { name: 'Output', exact: true })).toHaveAttribute('aria-selected', 'true');
   });
 }
-
-test('an Algorithm-mode run archives generated code while preserving the original complete drawing', async ({ page }) => {
-  const corrected = '#include <stdio.h>\nint main(void) { puts("8"); return 0; }';
-  await page.route('**/api/pseudocode', route => route.fulfill({ json: {
-    source: corrected, explanation: 'Completed the code.', issues: [], level: 3, provider: 'test-fixture', model: 'fixture-only',
-  } }));
-  await page.route('**/api/run', route => route.fulfill({ json: success }));
-  const original = await prepare(page, 'c', true);
-  const slider = page.getByRole('slider', { name: 'Code mode' });
-  await slider.focus(); await slider.press('Home'); await slider.press('ArrowRight'); await slider.press('ArrowRight');
-  const saved = savedResponse(page);
-  await page.getByRole('button', { name: 'Generate & run', exact: true }).click();
-  const snapshot = await (await saved).json();
-  expect(await savedFile(snapshot, 'board.cpp')).toBe(corrected);
-  const scene = JSON.parse(await savedFile(snapshot, 'board.excalidraw'));
-  expect(scene.elements.find(el => el.id === 'code').text).toBe(original);
-  expect(scene.elements.some(el => el.id === 'outside-note')).toBe(true);
-  expect(scene.verifier.execution.level).toBe(3);
-  await expect(page.locator('.terminal pre')).toHaveText('8\n');
-});
 
 test('each input case commits a separate full-board snapshot with its own stdin and result', async ({ page }) => {
   await page.route('**/api/run', route => route.fulfill({ json: { ...success, stdout: route.request().postDataJSON().stdin } }));

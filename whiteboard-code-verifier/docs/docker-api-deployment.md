@@ -1,6 +1,6 @@
 # Connect the Vercel frontend to a Docker API server
 
-This is the persistent-server option for Docker-based C execution, Gemini OCR, and Git-backed lesson snapshots. The frontend at `https://board-of-c.vercel.app` calls that server over HTTPS. If you want handwriting and hosted C compilation without your own server, use the [Vercel Functions setup](vercel-serverless.md) instead. API access is public; no login is required.
+This is the persistent-server option for Docker-based C++/Python execution, handwriting OCR through the local OCR service, and Git-backed lesson snapshots. The frontend at `https://board-of-c.vercel.app` calls that server over HTTPS. If you want handwriting and hosted C compilation without your own server, use the [Vercel Functions setup](vercel-serverless.md) instead. API access is public; no login is required.
 
 ## If you do not have a server yet
 
@@ -21,7 +21,7 @@ On a fresh Ubuntu server, install Git, Docker Engine, and Caddy, and install Nod
    cp .env.example .env
    ```
 
-2. In the server's `.env`, set `BOARDROOM_APP_ORIGIN=https://board-of-c.vercel.app` and `GEMINI_API_KEY` if handwriting recognition is needed. Set `SNAPSHOT_DIR` to a persistent, writable location. Keep `.env` out of Git and readable only by the API account. `BOARDROOM_API_HOST=api.example.com` can be set if the reverse proxy preserves the external Host header.
+2. In the server's `.env`, set `BOARDROOM_APP_ORIGIN=https://board-of-c.vercel.app`; if handwriting recognition is needed, also run the [OCR service](../ocr-service/README.md) on the same host. Set `SNAPSHOT_DIR` to a persistent, writable location. Keep `.env` out of Git and readable only by the API account. `BOARDROOM_API_HOST=api.example.com` can be set if the reverse proxy preserves the external Host header.
 3. Keep Node bound to loopback. A Caddy site can terminate HTTPS and forward to it:
 
    ```caddyfile
@@ -53,7 +53,7 @@ On a fresh Ubuntu server, install Git, Docker Engine, and Caddy, and install Nod
    ```
 
    Use your actual Node path and ensure the service account can write `SNAPSHOT_DIR`. API access requires no token.
-4. In the Vercel project rooted at `whiteboard-code-verifier/`, set `VITE_BOARDROOM_API_ORIGIN=https://api.example.com` and redeploy. This is a public hostname; Gemini and GitHub keys stay server-side. There is no token entry or cookie session.
+4. In the Vercel project rooted at `whiteboard-code-verifier/`, set `VITE_BOARDROOM_API_ORIGIN=https://api.example.com` and redeploy. This is a public hostname; GitHub keys stay server-side. There is no token entry or cookie session.
 5. Confirm `https://api.example.com/api/health` answers HTTP 200 without credentials, and that the page shows **Runner ready**. Test a typed lesson, then OCR if configured. Docker and `whiteboard-runner:local` must be available. Snapshot Git synchronization requires a separate archive remote.
 
 CORS allows the configured frontend origin; preview URLs need their own origin configuration. Existing local request-size, concurrency and execution limits remain. `BOARDROOM_API_TOKEN` is no longer used.

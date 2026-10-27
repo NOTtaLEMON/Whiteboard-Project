@@ -61,29 +61,6 @@ test('Python cases run the selected language and download/import restores that l
   await expect(page.getByLabel(/CODE THAT RUNS/)).toHaveValue(program);
 });
 
-for (const level of [3]) {
-  test(`Python level ${level} generates Python and executes it without replacing the original writing`, async ({ page }) => {
-    await page.route('**/api/health*', (route) => route.fulfill({ json: { runner: { available: true }, ocr: { available: true } } }));
-    await page.route('**/api/pseudocode', (route) => {
-      const body = route.request().postDataJSON();
-      expect(body.language).toBe('python');
-      expect(body.level).toBe(level);
-      return route.fulfill({ json: { source: 'for value in range(3):\n    print(value)\n', explanation: 'Python demonstration.', issues: [], level, language: 'python', provider: 'test-fixture', model: 'fixture-only', durationMs: 1 } });
-    });
-    await pythonBoard(page);
-    const original = level === 2 ? 'for value in range(3)\n    print(value)' : 'Print the numbers zero through two, one per line.';
-    await page.getByLabel(/CODE THAT RUNS/).fill(original);
-    await page.getByRole('slider', { name: 'Code mode' }).focus();
-    await page.keyboard.press('Home');
-    for (let i = 1; i < level; i++) await page.keyboard.press('ArrowRight');
-    await page.getByRole('button', { name: level === 2 ? 'Correct & run' : 'Generate & run', exact: true }).click();
-    await expect(page.getByLabel('Generated Python', { exact: true })).toContainText('for value in range(3)');
-    await expect(page.locator('.terminal pre')).toHaveText('0\n1\n2\n');
-    await openPanel(page);
-    await expect(page.getByLabel(/CODE THAT RUNS/)).toHaveValue(original);
-  });
-}
-
 test('Python OCR keeps indentation, requires confirmation and invalidates it on a language switch', async ({ page }) => {
   await page.route('**/api/health*', (route) => route.fulfill({ json: { runner: { available: true }, ocr: { available: true } } }));
   await page.route('**/api/ocr', (route) => {
@@ -91,7 +68,6 @@ test('Python OCR keeps indentation, requires confirmation and invalidates it on 
     return route.fulfill({ json: { provider: 'test-fixture', model: 'fixture-only', durationMs: 1, language: 'python', requiresConfirmation: true,
       code: ['for x in range(2):', '    print(x)'].map((text, index) => ({ text, uncertain: false, alternatives: [], box: [10 + index * 300, 10, 200 + index * 300, 900] })), stdin: [] } });
   });
-  await page.route('**/api/pseudocode', (route) => route.fulfill({ json: { language: 'python', level: 1, source: 'for x in range(2):\n    print(x)', explanation: 'Reviewed.', issues: [], provider: 'test-fixture', model: 'fixture-only' } }));
   await pythonBoard(page);
   const area = await page.locator('.canvas-container').boundingBox();
   await page.mouse.move(area.x + area.width * .4, area.y + area.height * .45);

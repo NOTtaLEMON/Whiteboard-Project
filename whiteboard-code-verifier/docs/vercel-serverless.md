@@ -1,22 +1,20 @@
 # Run Boardroom on Vercel without your own Docker server
 
-This deployment uses Vercel Functions for the public API. Gemini reads black and blue handwriting and provides all three pseudocode assistance levels; a configured [Wandbox](https://wandbox.org/) service compiles C and runs Python 3. The app never presents Gemini-generated output as a compiler result. Source and stdin are sent to Wandbox, so do not submit private classroom data as code or input. This is a different execution environment from the local Docker runner: its compiler version, sanitizer support, limits, and runtime diagnostics may differ.
+This deployment uses Vercel Functions for the public API. Handwriting is read by the separate local OCR service (point `OCR_SERVICE_URL` at it); a configured [Wandbox](https://wandbox.org/) service compiles C and runs Python 3. Source and stdin are sent to Wandbox, so do not submit private classroom data as code or input. This is a different execution environment from the local Docker runner: its compiler version, sanitizer support, limits, and runtime diagnostics may differ.
 
 In the Vercel project, set the root directory to `whiteboard-code-verifier` and build with `npm run build`. Add these **server-side** environment variables in Project Settings → Environment Variables:
 
 | Name | Value |
 | --- | --- |
 | `OCR_SERVICE_URL` | URL of a hosted `ocr-service` (Qwen2-VL). Required for handwriting on Vercel, which cannot run the model itself. |
-| `GEMINI_API_KEY` | Optional. Google AI Studio key for pseudocode help and Gemini fixes. |
 | `WANDBOX_API_URL` | `https://wandbox.org/api` for Wandbox's public API. |
 | `WANDBOX_CPP_COMPILER` | Optional compiler name; defaults to `gcc-head`. |
 | `WANDBOX_PYTHON_COMPILER` | Optional Python runtime; defaults to `cpython-3.13.8`. |
-| `GEMINI_MODEL` | Optional Gemini model override. |
 | `SNAPSHOT_GITHUB_REPOSITORY` | Archive repository, e.g. `ksu-gitreaper807/Craft-N-Code-Karnataka`. |
 | `SNAPSHOT_GITHUB_BRANCH` | Optional archive branch; defaults to `boardroom-lessons`. |
 | `SNAPSHOT_GITHUB_TOKEN` | Fine-grained GitHub token limited to the archive repository, with **Contents: read/write**. |
 
-Remove any old `VITE_BOARDROOM_API_ORIGIN` setting so the browser calls the same Vercel deployment's `/api` functions. Redeploy after changing environment variables. Boardroom is public and requires no sign-in, token, or cookie. Existing `BOARDROOM_API_TOKEN` values are ignored. Keep Gemini and GitHub secrets server-side. The public health endpoint checks that the selected runtime (`/api/health?language=python` for Python) appears in Wandbox's list. Test C++, Python, and a handwritten board after deployment. A successful health check does not guarantee that Wandbox will accept a later execution request.
+Remove any old `VITE_BOARDROOM_API_ORIGIN` setting so the browser calls the same Vercel deployment's `/api` functions. Redeploy after changing environment variables. Boardroom is public and requires no sign-in, token, or cookie. Existing `BOARDROOM_API_TOKEN` values are ignored. Keep GitHub secrets server-side. The public health endpoint checks that the selected runtime (`/api/health?language=python` for Python) appears in Wandbox's list. Test C++, Python, and a handwritten board after deployment. A successful health check does not guarantee that Wandbox will accept a later execution request.
 
 ## GitHub lesson snapshots
 

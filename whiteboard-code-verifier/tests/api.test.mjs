@@ -36,22 +36,6 @@ function post(base, payload, options = {}) {
   });
 }
 
-test('pseudocode API preserves payload, authenticates, bounds uploads and never executes a program', async (t) => {
-  let received;
-  const base = await start(t, { apiToken: 'test-private-token',
-    run: async () => { throw new Error('Must not run during Gemini preparation'); },
-    assist: async (body) => { received = body; return { source: 'int main(void) {}', level: body.level }; } });
-  const body = JSON.stringify({ source: 'print 5', stdin: '1\n', level: 3 });
-  const invoke = (extra = {}) => base('/api/pseudocode', { method: 'POST', body,
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-private-token' }, ...extra });
-  assert.equal((await invoke({ headers: { 'Content-Type': 'application/json' } })).status, 200);
-  const response = await invoke();
-  assert.equal(response.status, 200);
-  assert.deepEqual(received, JSON.parse(body));
-  assert.equal((await invoke({ body: 'x'.repeat(65_537) })).status, 413);
-  assert.equal((await invoke({ headers: { Authorization: 'Bearer test-private-token', Origin: 'https://foreign.example' } })).status, 403);
-});
-
 test('rejects invalid and oversized code/input before entering the runner', () => {
   assert.ok(validatePayload(null));
   assert.ok(validatePayload({ source: ' ' }));
@@ -191,15 +175,15 @@ test('OCR payload cap is independent of source cap and foreign origins are rejec
   assert.equal((await base('/api/ocr', { ...options, headers: { ...options.headers, Origin: 'https://unrelated.example' } })).status, 403);
 });
 
-test('returns safe Gemini quota diagnostics to the browser', async (t) => {
-  const diagnostic = { provider: 'gemini', httpStatus: 429, quotaStatus: 'token_limit_reached', retryAfterSeconds: 12 };
+test('returns safe OCR diagnostics to the browser', async (t) => {
+  const diagnostic = { provider: 'local-vlm', reason: 'timeout', httpStatus: null };
   const base = await start(t, { recognize: async () => {
-    throw Object.assign(new Error('Gemini reports a token quota limit was reached.'), {
-      status: 429, code: 'ocr_provider_error', ocrDiagnostic: diagnostic,
+    throw Object.assign(new Error('The handwriting model timed out.'), {
+      status: 504, code: 'ocr_unavailable', ocrDiagnostic: diagnostic,
     });
   } });
   const response = await base('/api/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-  assert.equal(response.status, 429);
+  assert.equal(response.status, 504);
   assert.deepEqual((await response.json()).diagnostic, diagnostic);
 });
 

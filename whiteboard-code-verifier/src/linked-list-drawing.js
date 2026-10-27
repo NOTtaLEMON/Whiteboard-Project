@@ -1,5 +1,3 @@
-import { composeSource } from './template.js';
-
 // Interpret only an entire, unbranched integer chain, never C++ expressions/code.
 export function linkedListDrawing(source) {
   if (typeof source !== 'string' || source.length > 8192 ||
@@ -29,8 +27,8 @@ int main() {
 }`;
 }
 
-export function composeBoardSource(source, template, wrap, language = 'c', algorithm = false) {
-  const drawing = language === 'c' && !algorithm ? linkedListDrawing(source) : null;
-  return drawing === null ? composeSource(source, template, wrap) :
-    { source: linkedListProgram(drawing), wrapped: false, skipped: false, drawing };
+// A drawn integer chain becomes a real linked list; every other text is returned unchanged.
+export function composeBoardSource(source, language = 'c') {
+  const drawing = language === 'c' ? linkedListDrawing(source) : null;
+  return drawing === null ? { source, drawing: null } : { source: linkedListProgram(drawing), drawing };
 }

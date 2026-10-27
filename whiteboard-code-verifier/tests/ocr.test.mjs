@@ -1,19 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ocrConfiguration, ocrTimeoutMs, geminiConfiguration, recognizeHandwriting, validateOcrImages, validateTranscription } from '../server/ocr.mjs';
+import { ocrConfiguration, ocrTimeoutMs, recognizeHandwriting, validateOcrImages, validateTranscription } from '../server/ocr.mjs';
 
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aHoQAAAAASUVORK5CYII=';
 const line = (text, extra = {}) => ({ text, box: [10, 20, 80, 900], uncertain: false, alternatives: [], ...extra });
 const env = { OCR_SERVICE_URL: 'http://ocr.test:8788/', OCR_MODEL: 'test-model', VERCEL: '1' };
 const reply = (body, init) => async () => new Response(JSON.stringify(body), init);
 
-test('OCR runs locally by default, needs a URL on Vercel, and never depends on a Gemini key', async () => {
+test('OCR runs locally by default and needs a service URL on Vercel', async () => {
   assert.equal(ocrConfiguration({}).available, true);
   assert.equal(ocrConfiguration({}).provider, 'local-vlm');
   assert.equal(ocrConfiguration({ VERCEL: '1' }).available, false);
   assert.equal(ocrConfiguration({ VERCEL: '1', OCR_SERVICE_URL: 'https://ocr.example.com' }).available, true);
-  assert.equal(geminiConfiguration({}).available, false);
-  assert.equal(geminiConfiguration({ GEMINI_API_KEY: 'k' }).available, true);
   await assert.rejects(recognizeHandwriting({ code: PNG }, { env: { VERCEL: '1' } }), (error) => error.status === 503 && error.code === 'ocr_not_configured');
 });
 

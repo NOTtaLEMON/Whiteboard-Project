@@ -51,7 +51,7 @@ function snapshotProgram(scene) {
       throw invalid('Snapshot execution metadata is invalid.');
     }
     // The complete board remains unchanged. Replay uses the actual submitted
-    // source/input, which can differ after editor edits, templates, or Gemini.
+    // source/input, which can differ after editor edits.
     program = { ...program, source: execution.source, stdin: execution.stdin };
   }
   if (typeof program.source !== 'string' || !program.source.trim() || program.source.includes('\0') || Buffer.byteLength(program.source) > 32_768 ||

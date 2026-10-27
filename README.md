@@ -73,7 +73,7 @@ The full document is in **[docs/PRD.md](docs/PRD.md)**. Summary:
 | **Vision** | Every example shown on a board can be run, trusted and revisited. |
 | **Primary user** | Programming teachers; secondary: students reviewing lessons. |
 | **Must have (shipped)** | Canvas with code/stdin regions; pretrained local vision-model (Qwen2-VL) handwriting OCR with mandatory review; C++17 and Python execution; real diagnostics linked to the board; test cases; Git-backed lesson history. |
-| **Should have (shipped)** | Teaching notes for `malloc`/`free`/`scanf` etc.; curated teaching libraries (`stack.h`, `linked_list.h`, `queue.h`, `search.h`); Gemini pseudocode levels. |
+| **Should have (shipped)** | Teaching notes for `malloc`/`free`/`scanf` etc.; curated teaching libraries (`stack.h`, `linked_list.h`, `queue.h`, `search.h`). |
 | **Non-goals** | Physical-whiteboard camera capture, user accounts, grading, running untrusted public code at scale. |
 | **Success measures** | A teacher goes from handwriting to a real result in under a minute; compiler errors are linked to the right line; no OCR output runs without confirmation. |
 
@@ -82,9 +82,8 @@ The full document is in **[docs/PRD.md](docs/PRD.md)**. Summary:
 1. **Select code & input.** Drag a frame around existing writing. Black ink is source; blue (`#1971c2`) ink is stdin; other colours are annotations and are ignored.
 2. **Typed text bypasses OCR.** Typed elements are read literally, with blank lines preserved and a source-line-to-element map for diagnostics.
 3. **Handwriting goes through the local Qwen2-VL model, then through the teacher.** Code and stdin are exported as separate PNG crops. The transcription is shown line by line with uncertainty flags. The teacher must tick both confirmations before it can be used.
-4. **Pseudocode levels** (optional): *Full program* compiles as-is; *Snippet* wraps the code in a template; *Algorithm* asks Gemini for a complete C++17 or Python demonstration, shown separately from the original drawing.
-5. **Run.** The runner compiles with `-std=c++17 -g -O0 -Wall -Wextra -fsanitize=address,undefined`, feeds stdin through a pipe and returns structured diagnostics.
-6. **Snapshots and History.** Each completed run is archived; the History tab lists the latest 30 and restores the scene. Restored handwriting must be reviewed again.
+4. **Run.** The runner compiles with `-std=c++17 -g -O0 -Wall -Wextra -fsanitize=address,undefined`, feeds stdin through a pipe and returns structured diagnostics. Code is run exactly as written; nothing is completed or corrected for the teacher.
+5. **Snapshots and History.** Each completed run is archived; the History tab lists the latest 30 and restores the scene. Restored handwriting must be reviewed again.
 
 Full details: [Technical stack and project overview](whiteboard-code-verifier/docs/technical-overview.md).
 
@@ -101,7 +100,6 @@ flowchart LR
     subgraph API["Node.js 22 API (server/)"]
         GUARD[Origin and host checks, body limits, rate limits]
         OCR["/api/ocr"]
-        PSE["/api/pseudocode"]
         RUN["/api/run"]
         SNAP["/api/snapshots"]
     end
@@ -112,13 +110,11 @@ flowchart LR
     end
 
     VLM[(Local OCR service: pretrained Qwen2-VL)]
-    GEMINI[(Google Gemini API, optional pseudocode help)]
     GITLOCAL[(Local Git archive: snapshots/)]
     GITHUB[(GitHub repo: boardroom-lessons branch)]
 
     UI --> REV
     UI -->|image crops| OCR --> VLM
-    UI --> PSE --> GEMINI
     UI -->|reviewed source + stdin| RUN
     RUN --> DOCKER
     RUN --> WANDBOX
@@ -141,7 +137,7 @@ Design decisions worth noting:
 
 - **Backend owns secrets and coordination; the container owns execution; the OCR model only transcribes.** No component is trusted with more than it needs.
 - **No database.** The working board lives in browser state; durable history is Git, which gives diffs, authorship and offline replay for free.
-- **No Express and no Gemini SDK.** The API uses Node's built-in `http` and `fetch`, which keeps the dependency surface and supply-chain risk small.
+- **No Express and no AI SDK.** The API uses Node's built-in `http` and `fetch`, which keeps the dependency surface and supply-chain risk small.
 - **Reproducible replay.** Snapshots vendor the headers they use, freeze `runner.py` and the compiler flags, and record SHA-256 hashes plus a pinned GCC image reference.
 
 ## 6. Data and AI used
@@ -151,10 +147,9 @@ Design decisions worth noting:
 | **OCR model** | Pretrained **Qwen2-VL 2B Instruct** (Alibaba Qwen, Hugging Face, Apache-2.0), run locally in `ocr-service/` with PyTorch on CPU. No training or fine-tuning was done. |
 | **How it reads a board** | The whole crop goes to the model with a fixed prompt: transcribe literally, one line per written line, keep indentation, never repair code. The output is split into lines, and a line is flagged `uncertain` when its least-confident token is below 0.5. |
 | **Why this model** | We were asked to use a pretrained model instead of an API. We first tried **TrOCR** (a line-level handwriting model); it misread code badly (`#include <iostream>` became `7in close , by no stream ?`) because it is trained on prose. A pretrained vision-language model reads code symbols and indentation correctly without any fine-tuning. The word-level [mltu IAM tutorial](https://github.com/pythonlessons/mltu/tree/main/Tutorials/03_handwriting_recognition) was also considered but trains from scratch on English words. See [OCR options](whiteboard-code-verifier/docs/ocr-options.md). |
-| **Optional generative AI** | Google **Gemini** is used only for pseudocode-to-program help and "fix this failed run" suggestions (`GEMINI_API_KEY`, optional). It is not used for handwriting. |
 | **What the AI does not do** | It does not decide correctness, grade, or run code. Execution evidence comes from GCC, sanitizers and the Python interpreter. |
 | **Safeguards** | The prompt forbids adding missing headers, `&` or semicolons; transcription is editable and must be confirmed; scene fingerprints invalidate confirmation when ink changes. |
-| **Data leaving the machine** | Handwriting images: none. Gemini (if enabled) receives reviewed source text only, with `store: false`. |
+| **Data leaving the machine** | None for handwriting: images are processed by the local model and no AI API key exists in the project. |
 | **Datasets** | None required. Test inputs are synthetic (`tests/fixtures`, built-in starter lessons). |
 
 ## 7. Security and responsible use
@@ -178,7 +173,7 @@ Every request gets a fresh container that is removed afterwards:
 
 ### API and secrets
 
-- **Secrets stay server-side.** The optional `GEMINI_API_KEY` and `SNAPSHOT_GITHUB_TOKEN` are never `VITE_`-prefixed, never mounted into containers, and never logged. Logs omit images, transcriptions and raw provider errors.
+- **Secrets stay server-side.** The `SNAPSHOT_GITHUB_TOKEN` is never `VITE_`-prefixed, never mounted into containers, and never logged. Logs omit images, transcriptions and raw provider errors.
 - **Origin and host checks.** The API binds to loopback, validates `Host` and `Origin`, and allows CORS only for the configured `BOARDROOM_APP_ORIGIN`. Browser requests carry no credentials.
 - **Abuse limits.** OCR/AI: 1 in flight, 6 per minute, 4 MiB body. Run: 2 in flight, 20 per minute, 64 KiB body. Request and header timeouts are 10 s.
 - **Safe errors.** Responses carry diagnostic metadata only; quota failures are classified without leaking provider payloads.
@@ -223,7 +218,6 @@ Every request gets a fresh container that is removed afterwards:
 | Service | Role | Where configured |
 |---|---|---|
 | **Qwen2-VL on Hugging Face** (`Qwen/Qwen2-VL-2B-Instruct`) | Pretrained handwriting model; weights downloaded once (~4.5 GB), then run offline | `OCR_MODEL`, `OCR_SERVICE_URL` |
-| **Google Gemini API** (optional) | Pseudocode help and Gemini fixes only | `GEMINI_API_KEY`, `GEMINI_MODEL` |
 | **Wandbox** | Hosted C++/Python execution when Docker is unavailable | `WANDBOX_API_URL`, `WANDBOX_CPP_COMPILER`, `WANDBOX_PYTHON_COMPILER` |
 | **GitHub (Git Data API)** | Persistent lesson archive in hosted mode | `SNAPSHOT_GITHUB_REPOSITORY`, `SNAPSHOT_GITHUB_BRANCH`, `SNAPSHOT_GITHUB_TOKEN` |
 | **GitHub Actions** | Automated submission check on pull requests | `.github/workflows/check-submission.yml` |
@@ -258,7 +252,7 @@ pip install -r requirements.txt
 python service.py
 ```
 
-Open http://127.0.0.1:5173. Typed code works without the OCR service. Run `cp .env.example .env` and set `GEMINI_API_KEY` only if you want the optional pseudocode levels. See [ocr-service/README.md](whiteboard-code-verifier/ocr-service/README.md).
+Open http://127.0.0.1:5173. Typed code works without the OCR service. See [ocr-service/README.md](whiteboard-code-verifier/ocr-service/README.md).
 
 | Command | Purpose |
 |---|---|
@@ -276,7 +270,6 @@ Open http://127.0.0.1:5173. Typed code works without the OCR service. Run `cp .e
 | `OCR_SERVICE_URL` | Where the API finds the OCR service (default `http://127.0.0.1:8788`; required on Vercel) |
 | `OCR_MODEL` | Vision-language checkpoint (default `Qwen/Qwen2-VL-2B-Instruct`) |
 | `OCR_TIMEOUT_MS` | API wait for the OCR service (default 180000 locally, 50000 on Vercel) |
-| `GEMINI_API_KEY` | Optional: pseudocode help and Gemini fixes (server only) |
 | `SNAPSHOT_DIR` | Location of the local Git archive |
 | `SNAPSHOT_GITHUB_*` | Hosted archive repository, branch, token |
 | `BOARDROOM_APP_ORIGIN` | Allowed frontend origin for a separate API server |
@@ -287,22 +280,21 @@ Open http://127.0.0.1:5173. Typed code works without the OCR service. Run `cp .e
 
 ## 10. Testing
 
-- Unit tests cover board extraction, OCR parsing, hosted runner, snapshots, GitHub archive, pseudocode and test-case handling (`tests/*.test.mjs`, `tests/test_*.py`).
+- Unit tests cover board extraction, OCR parsing, hosted runner, snapshots, GitHub archive and test-case handling (`tests/*.test.mjs`, `tests/test_*.py`).
 - `scripts/check-runner.mjs` exercises the real container sandbox; Playwright covers the browser flow.
 - `npm run test:ocr -- image.png` reads a PNG through the running OCR service; `npm run benchmark:ocr` measures transcription error on private samples. See [OCR options](whiteboard-code-verifier/docs/ocr-options.md) for the models compared.
 
 ## 11. AI tools and reused code
 
-**AI tools used in building:** Claude Code (Anthropic) for development assistance. **AI inside the product:** pretrained Qwen2-VL for handwriting and optional Gemini for pseudocode help, as described in [section 6](#6-data-and-ai-used).
+**AI tools used in building:** Claude Code (Anthropic) for development assistance. **AI inside the product:** a pretrained Qwen2-VL model for handwriting, run locally with no API key, as described in [section 6](#6-data-and-ai-used).
 
-**Reused open-source code and services:** Excalidraw, React, Vite, Playwright, the GCC Docker image, the pretrained Qwen2-VL weights (via Hugging Face Transformers), and the third-party Wandbox and Gemini APIs. Everything else, including the runner, sandbox orchestration, snapshot/replay system, teaching libraries and OCR review flow, is original to this project.
+**Reused open-source code and services:** Excalidraw, React, Vite, Playwright, the GCC Docker image, the pretrained Qwen2-VL weights (via Hugging Face Transformers), and the third-party Wandbox API. Everything else, including the runner, sandbox orchestration, snapshot/replay system, teaching libraries and OCR review flow, is original to this project.
 
 ## 12. Limits
 
 - **Languages:** C++17 and Python 3 only. Early designs targeted plain C; some filenames and docs still say "C".
 - **OCR:** The pretrained model is not trained on classroom handwriting, and uncertainty flags are not calibrated scores; it was verified on one hand-drawn sample, not benchmarked. Teacher review is mandatory by design. OCR returns text without line coordinates, so handwritten diagnostics appear in the editor rather than on the canvas.
 - **OCR hosting and speed:** the model needs about 4.5 GB of disk and roughly 10 GB of RAM, and takes about 30 seconds per read on a laptop CPU (seconds with a GPU). It runs as a local or Docker service; Vercel cannot host it, so set `OCR_SERVICE_URL` to a server that can.
-- **Gemini quota:** the optional pseudocode help depends on the free Gemini tier, which is tightly rate limited.
 - **Isolation:** sanitizers and resource limits apply to the Docker runner, not to Wandbox. See the security caveat above.
 - **Interactivity:** programs receive stdin as a single pipe; there is no interactive terminal.
 - **Persistence:** no accounts or database; the working board is held in the browser until saved or downloaded.
@@ -321,10 +313,10 @@ Open http://127.0.0.1:5173. Typed code works without the OCR service. Run `cp .e
 ├── .github/                      PR template and submission-check workflow
 └── whiteboard-code-verifier/     The application
     ├── src/                      React UI, board extraction, capture, review
-    ├── server/                   Node API, OCR client, Gemini helper, sandbox, snapshots
+    ├── server/                   Node API, OCR client, sandbox, snapshots
     ├── api/                      Vercel serverless entry points
     ├── runner/                   Runner Dockerfile, runner.py, teaching headers
-    ├── ocr-service/              Local pretrained-VLM (Qwen2-VL) handwriting service (Python)
+    ├── ocr-service/              Local pretrained Qwen2-VL handwriting service (Python)
     ├── scripts/                  Dev launcher, smoke checks, benchmarks
     ├── tests/                    Unit, integration and browser tests
     └── docs/                     Technical documentation
