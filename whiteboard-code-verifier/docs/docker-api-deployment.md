@@ -22,7 +22,7 @@ On a fresh Ubuntu server, install Git, Docker Engine, and Caddy, and install Nod
    ```
 
 2. In the server's `.env`, set `BOARDROOM_APP_ORIGIN=https://board-of-c.vercel.app`; if handwriting recognition is needed, also run the [OCR service](../ocr-service/README.md) on the same host. Set `SNAPSHOT_DIR` to a persistent, writable location. Keep `.env` out of Git and readable only by the API account. `BOARDROOM_API_HOST=api.example.com` can be set if the reverse proxy preserves the external Host header.
-3. Keep Node bound to loopback. A Caddy site can terminate HTTPS and forward to it:
+3. Set `BOARDROOM_TRUST_PROXY=1` in `.env` so the per-visitor rate limits use the address Caddy forwards (without it, every visitor shares the proxy's single address). Keep Node bound to loopback. A Caddy site can terminate HTTPS and forward to it:
 
    ```caddyfile
    api.example.com {

@@ -175,7 +175,7 @@ Every request gets a fresh container that is removed afterwards:
 
 - **Secrets stay server-side.** The `SNAPSHOT_GITHUB_TOKEN` is never `VITE_`-prefixed, never mounted into containers, and never logged. Logs omit images, transcriptions and raw provider errors.
 - **Origin and host checks.** The API binds to loopback, validates `Host` and `Origin`, and allows CORS only for the configured `BOARDROOM_APP_ORIGIN`. Browser requests carry no credentials.
-- **Abuse limits.** OCR/AI: 1 in flight, 6 per minute, 4 MiB body. Run: 2 in flight, 20 per minute, 64 KiB body. Request and header timeouts are 10 s.
+- **Abuse limits.** Per visitor address: 6 OCR and 20 run requests per minute, plus a server-wide cap (30 and 120) so a crowd cannot overload the machine. OCR allows 1 request in flight (4 MiB body); runs allow 2 in flight (64 KiB body). Request and header timeouts are 10 s. Behind a reverse proxy set `BOARDROOM_TRUST_PROXY=1` so visitors are told apart.
 - **Safe errors.** Responses carry diagnostic metadata only; quota failures are classified without leaking provider payloads.
 
 ### Responsible use

@@ -1,3 +1,4 @@
+import { createRateLimiter, clientAddress } from './rate-limit.mjs';
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -68,8 +69,9 @@ export function createHandler({ run = defaultRun, health = defaultHealth, now = 
   appOrigin = process.env.BOARDROOM_APP_ORIGIN, apiHost = process.env.BOARDROOM_API_HOST } = {}) {
   let active = 0;
   let activeOcr = 0;
-  let rate = { start: 0, count: 0 };
-  let ocrRate = { start: 0, count: 0 };
+  // Per-caller and server-wide budgets per minute (see rate-limit.mjs).
+  const allowRun = createRateLimiter({ perClient: 20, total: 120, now });
+  const allowOcr = createRateLimiter({ perClient: 6, total: 30, now });
   return async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
@@ -138,10 +140,8 @@ export function createHandler({ run = defaultRun, health = defaultHealth, now = 
       if (pathname === '/api/ocr' && req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) return send(res, 415, { error: 'Use application/json.' });
         if (activeOcr >= 1) return send(res, 429, { error: 'An OCR request is already running. Try again shortly.' });
-        if (now() - ocrRate.start >= 60_000) ocrRate = { start: now(), count: 0 };
-        if (ocrRate.count >= 6) return send(res, 429, { error: 'OCR request limit reached. Try again in a minute.' });
+        if (!allowOcr(clientAddress(req))) return send(res, 429, { error: 'OCR request limit reached. Try again in a minute.' });
         activeOcr += 1;
-        ocrRate.count += 1;
         try {
           return send(res, 200, await recognize(await requestBody(req, OCR_BODY_LIMIT)));
         }
@@ -150,11 +150,9 @@ export function createHandler({ run = defaultRun, health = defaultHealth, now = 
       if (pathname === '/api/run' && req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) return send(res, 415, { error: 'Use application/json.' });
         if (active >= 2) return send(res, 429, { error: 'Both runners are busy. Try again shortly.' });
-        if (now() - rate.start >= 60_000) rate = { start: now(), count: 0 };
-        if (rate.count >= 20) return send(res, 429, { error: 'Run limit reached. Try again in a minute.' });
+        if (!allowRun(clientAddress(req))) return send(res, 429, { error: 'Run limit reached. Try again in a minute.' });
         // Reserve before awaiting input, so concurrent uploads cannot bypass the cap.
         active += 1;
-        rate.count += 1;
         try {
           const body = await requestBody(req);
           const invalid = validatePayload(body);
