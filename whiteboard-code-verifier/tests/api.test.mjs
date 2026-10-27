@@ -257,22 +257,34 @@ test('public local APIs ignore old token configuration and retain origin checks'
   assert.ok(legacy.headers['set-cookie'].every(value => value.includes('Max-Age=0')));
 });
 
-test('with an owner key configured, only the owner reaches the private API; health and headers stay public', async (t) => {
+test('two tiers: anyone can run code, but handwriting, snippets and lessons need the owner key', async (t) => {
   const previous = process.env.BOARDROOM_OWNER_KEY;
   process.env.BOARDROOM_OWNER_KEY = 'owner-secret-key-123';
   t.after(() => { if (previous === undefined) delete process.env.BOARDROOM_OWNER_KEY; else process.env.BOARDROOM_OWNER_KEY = previous; });
   let runs = 0;
-  const base = await start(t, { health: async () => ({ available: true }), run: async () => { runs += 1; return { status: 'success' }; } });
-  const run = (headers = {}) => base('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify({ source: 'int main(){}' }) });
-  const denied = await run();
-  assert.equal(denied.status, 401);
-  assert.equal((await denied.json()).code, 'owner_key_required');
-  assert.equal((await run({ Authorization: 'Bearer wrong-key' })).status, 401);
-  assert.equal((await base('/api/snapshots')).status, 401);
-  assert.equal((await base('/api/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 401);
-  assert.equal(runs, 0, 'nothing ran without the key');
-  assert.equal((await run({ Authorization: 'Bearer owner-secret-key-123' })).status, 200);
+  let model = 0;
+  const base = await start(t, { health: async () => ({ available: true }), run: async () => { runs += 1; return { status: 'success' }; },
+    recognize: async () => { model += 1; return { code: [], stdin: [] }; }, prepare: async () => { model += 1; return { source: 'x' }; } });
+  const post = (path, headers = {}) => base(path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify({ source: 'int main(){}' }) });
+  const owner = { Authorization: 'Bearer owner-secret-key-123' };
+  // Public tier: running code needs no key.
+  assert.equal((await post('/api/run')).status, 200);
   assert.equal(runs, 1);
+  // Owner tier: no key or a wrong key is refused before the model or archive is touched.
+  for (const path of ['/api/ocr', '/api/snippet']) {
+    const denied = await post(path);
+    assert.equal(denied.status, 401);
+    assert.equal((await denied.json()).code, 'owner_key_required');
+    assert.equal((await post(path, { Authorization: 'Bearer wrong-key' })).status, 401);
+  }
+  assert.equal((await base('/api/snapshots')).status, 401);
+  assert.equal((await base('/api/snapshots', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 401);
+  assert.equal(model, 0, 'the model was never called without the key');
+  // The owner key opens the owner tier.
+  assert.equal((await post('/api/ocr', owner)).status, 200);
+  assert.equal((await post('/api/snippet', owner)).status, 200);
+  assert.equal(model, 2);
+  // Health and teaching headers stay public; health never reveals the key.
   const health = await (await base('/api/health')).json();
   assert.equal(health.locked, true);
   assert.equal(health.authorized, false);

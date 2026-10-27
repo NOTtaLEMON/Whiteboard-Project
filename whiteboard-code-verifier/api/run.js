@@ -5,7 +5,7 @@ export const config = { maxDuration: 30 };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed.' });
-  if (!authorize(req, res)) return;
+  if (!authorize(req, res, { open: true })) return;
   try { sendJson(res, 200, await runHostedProgram(jsonBody(req, 65_536))); }
   catch (error) { apiError(res, error); }
 }

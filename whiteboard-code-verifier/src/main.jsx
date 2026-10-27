@@ -49,6 +49,7 @@ function App() {
   const [health, setHealth] = useState(null);
   const [ocrHealth, setOcrHealth] = useState(null);
   const [snapshotAvailable, setSnapshotAvailable] = useState(false);
+  const [lockedOut, setLockedOut] = useState(false); // owner key configured on the server and not held by this browser
   const [snapshotMessage, setSnapshotMessage] = useState('Connect the API to check lesson storage.');
 
   const [reading, setReading] = useState(false);
@@ -135,16 +136,14 @@ function App() {
       const data = await readApiJson(response);
       if (requestId !== healthRequest.current || currentLanguage.current !== language) return;
       if (!data || typeof data.runner?.available !== 'boolean' || typeof data.ocr?.available !== 'boolean') throw new Error('Invalid API response');
-      if (data.locked && !data.authorized) {
-        const message = 'Running code, handwriting and lesson history are private on this site. Drawing and downloads still work.';
-        setSnapshotAvailable(false); setSnapshotMessage(message);
-        setHealth({ available: false, locked: true, message }); setOcrHealth({ available: false, message });
-        return;
-      }
-      setSnapshotAvailable(data.snapshots?.available !== false);
-      setSnapshotMessage(data.snapshots?.message ?? 'Lesson history is unavailable. You can download this board from the top bar.');
+      // Two tiers: everyone can run code; handwriting, Snippet mode and lesson history need the owner key.
+      const restricted = Boolean(data.locked && !data.authorized);
+      setLockedOut(restricted);
+      setSnapshotAvailable(!restricted && data.snapshots?.available !== false);
+      setSnapshotMessage(restricted ? 'Lesson history is owner-only on this site. You can download this board from the top bar.' :
+        data.snapshots?.message ?? 'Lesson history is unavailable. You can download this board from the top bar.');
       setHealth(data.runner);
-      setOcrHealth(data.ocr);
+      setOcrHealth(restricted ? { available: false, message: 'Handwriting and Snippet mode are owner-only on this site.' } : data.ocr);
     } catch (caught) {
       if (requestId !== healthRequest.current || currentLanguage.current !== language) return;
       const local = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
@@ -383,6 +382,7 @@ function App() {
   }
 
   async function saveCompilationSnapshot(scene, execution) {
+    if (lockedOut) { setAutomaticSnapshot(''); return; } // visitors without the owner key do not save lessons
     setAutomaticSnapshot('Saving full-board snapshot…');
     try {
       const savedScene = { ...scene, verifier: { ...scene.verifier, execution } };
@@ -837,7 +837,8 @@ function App() {
               <button className="icon-button" aria-label="Close panel" title="Close panel" onClick={() => setPanelVisible(false)}>×</button>
             </div>
             {hasInk && <p className="handwriting-state">{recognizedProgram ? 'Handwriting reviewed. Ready to compile.' : 'Handwriting needs recognition and teacher confirmation.'}</p>}
-            {health && !health.available && <div className="runner-notice"><span>{health.message}</span>{health.locked ? <OwnerKeyForm onSaved={checkHealth} /> : <button onClick={checkHealth}>Check again</button>}</div>}
+            {lockedOut && <div className="runner-notice"><span>Running code is open to everyone. Handwriting, Snippet mode and lesson history are owner-only.</span><OwnerKeyForm onSaved={checkHealth} /></div>}
+            {health && !health.available && <div className="runner-notice"><span>{health.message}</span><button onClick={checkHealth}>Check again</button></div>}
 
             <section className="panel-code" aria-label="Code that runs">
               {automaticSnapshot && <p className="panel-help" role="status" aria-label="Automatic snapshot status">{automaticSnapshot}</p>}

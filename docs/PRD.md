@@ -41,7 +41,7 @@ Code taught on a whiteboard is never executed. Students cannot tell whether an e
 | Persona | Need | Access |
 |---|---|---|
 | Teacher / site owner | Demonstrate and debug code live; keep lesson records | Full: holds the owner key |
-| Student / visitor | Draw on the board, view and download it | Board only; API calls return HTTP 401 when the owner key is configured |
+| Student / visitor | Draw, download, and run typed code | Board and code running; OCR, snippets and lessons return HTTP 401 without the owner key |
 
 ## 5. Functional requirements and user stories
 
@@ -58,7 +58,7 @@ Code taught on a whiteboard is never executed. Students cannot tell whether an e
 | U9 | Keep a record of every lesson | Each completed run creates one Git commit with board, source, input and replay bundle; History lists the latest 30 | `server/lessons/snapshots.mjs`, `server/lessons/github-snapshots.mjs` |
 | U10 | Replay an old lesson | A frozen runner, vendored headers and a SHA-256 manifest rebuild the run without the app | `server/lessons/snapshot-bundle.mjs`, `server/lessons/snapshot-replay.py` |
 | U11 | Write only loose C++ lines (Snippet mode) | The model adds boilerplate only; the app compares lines and warns on any change; the teacher confirms before execution | `ocr-service/service.py` (`/wrap`), `server/ai/snippet.mjs`, `src/main.jsx` |
-| U12 | Restrict the API to the owner | With `BOARDROOM_OWNER_KEY` set, every API route except health and public headers requires the key | `server/security/owner-key.mjs`, `server/hosted/hosted-api.mjs` |
+| U12 | Protect costly features while code running stays open | With `BOARDROOM_OWNER_KEY` set, OCR, snippets and lessons require the key; running code, health and public headers do not | `server/security/owner-key.mjs`, `server/hosted/hosted-api.mjs` |
 
 ## 6. System architecture
 
@@ -124,7 +124,7 @@ All bodies are JSON. With `BOARDROOM_OWNER_KEY` set, requests need `Authorizatio
 | Method and path | Access | Request | Response | Limits |
 |---|---|---|---|---|
 | `GET /api/health?language=c\|python` | Public | none | `{ runner, ocr, locked, authorized }` | none |
-| `POST /api/run` | Owner | `{ source, stdin?, language? }` | `{ status, stdout, stderr, compilerOutput, exitCode, durationMs, diagnostics[], notes[] }` | 64 KiB body; 2 concurrent; 20/min per client, 120/min total |
+| `POST /api/run` | Public | `{ source, stdin?, language? }` | `{ status, stdout, stderr, compilerOutput, exitCode, durationMs, diagnostics[], notes[] }` | 64 KiB body; 2 concurrent; 20/min per client, 120/min total |
 | `POST /api/ocr` | Owner | `{ code?: dataURL, stdin?: dataURL, language? }` | `{ code[], stdin[], provider, model, durationMs, requiresConfirmation }` | 4 MiB body; 1 concurrent; 6/min per client, 30/min total (shared with snippet) |
 | `POST /api/snippet` | Owner | `{ source, language: "c" }` | `{ source, warning, provider, model, durationMs, requiresConfirmation }` | 64 KiB body; shares OCR limits |
 | `GET/POST /api/snapshots` | Owner | scene for POST | list, or `{ id, commit }` | 4 MiB body |
@@ -169,7 +169,7 @@ docker run --rm --interactive --network none --read-only --cap-drop ALL
 
 | Threat | Control | Location |
 |---|---|---|
-| Strangers using the API (including from devtools) | Owner key compared as SHA-256 digests with `timingSafeEqual`; HTTP 401 otherwise | `server/security/owner-key.mjs` |
+| Strangers using the costly API routes (OCR, snippets, lessons), including from devtools | Owner key compared as SHA-256 digests with `timingSafeEqual`; HTTP 401 otherwise | `server/security/owner-key.mjs` |
 | Other websites calling the API | Host and Origin allow-lists, `Sec-Fetch-Site` check, CORS limited to the app origin | `server/index.mjs`, `server/hosted/hosted-api.mjs` |
 | Flooding | Per-client and server-wide rate limits, concurrency caps, body limits, 10 s request timeout | `server/security/rate-limit.mjs`, `server/index.mjs` |
 | Malicious submitted code | Docker isolation (section 9) | `server/execution/sandbox.mjs` |

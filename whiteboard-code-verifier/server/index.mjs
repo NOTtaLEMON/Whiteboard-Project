@@ -112,8 +112,9 @@ export function createHandler({ run = defaultRun, health = defaultHealth, now = 
       ]);
       return send(res, 200, { access: 'public', authenticated: false });
     }
-    // Only the health check and the public teaching headers answer without the owner key.
-    const publicPath = pathname === '/api/health' || pathname.startsWith('/api/library/');
+    // Public tier: health, the teaching headers and running code (capped by the rate limits). Everything that uses the
+    // owner's model server or archive token (OCR, snippets, lessons) needs the owner key.
+    const publicPath = pathname === '/api/health' || pathname === '/api/run' || pathname.startsWith('/api/library/');
     if (pathname.startsWith('/api/') && !publicPath && !hasOwnerKey(req)) return send(res, 401, OWNER_KEY_ERROR);
     try {
       if (pathname === '/api/health' && req.method === 'GET') {

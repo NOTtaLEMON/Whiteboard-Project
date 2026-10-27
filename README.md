@@ -172,7 +172,7 @@ Every request gets a fresh container that is removed afterwards:
 
 - **Secrets stay server-side.** The `SNAPSHOT_GITHUB_TOKEN` is never `VITE_`-prefixed, never mounted into containers, and never logged. Logs omit images, transcriptions and raw provider errors.
 - **Origin and host checks.** The API binds to loopback, validates `Host` and `Origin`, and allows CORS only for the configured `BOARDROOM_APP_ORIGIN`. Browser requests carry no credentials.
-- **Owner key.** With `BOARDROOM_OWNER_KEY` set on the server, the website stays public (anyone can draw and download), but every API request except the health check needs that key. The owner types it once in their browser; the server checks it, so calling the API from devtools without it gets HTTP 401. Use a long random key.
+- **Owner key (two tiers).** With `BOARDROOM_OWNER_KEY` set on the server, anyone can open the site, draw, download and **run code** (capped by the per-visitor rate limits). Handwriting reading, Snippet mode and lesson history, which use your model server and archive token, need the owner key. The owner types it once in their browser and the server checks it, so calling those routes from devtools without it gets HTTP 401. Use a long random key.
 - **Abuse limits.** Per visitor address: 6 OCR and 20 run requests per minute, plus a server-wide cap (30 and 120) so a crowd cannot overload the machine. OCR allows 1 request in flight (4 MiB body); runs allow 2 in flight (64 KiB body). Request and header timeouts are 10 s. Behind a reverse proxy set `BOARDROOM_TRUST_PROXY=1` so visitors are told apart.
 - **Safe errors.** Responses carry diagnostic metadata only; quota failures are classified without leaking provider payloads.
 
