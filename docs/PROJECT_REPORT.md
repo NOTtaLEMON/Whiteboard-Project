@@ -144,7 +144,7 @@ Node API (the waiter: checks and routes every request)
 **What they are:** PyTorch is the engine that runs AI models. Transformers is a library that downloads and uses models from Hugging Face (a public site for sharing models). They are how the OCR service loads and runs Qwen2-VL.
 
 ### Git and GitHub
-**What they are:** Git records every version of files; GitHub hosts that history online. **Why:** the code lives on GitHub for the hackathon, and every saved lesson is also a Git record, giving a free history of changes.
+**What they are:** Git records every version of files; GitHub hosts that history online. **Why:** the project's code lives on GitHub, and every saved lesson is also a Git record, giving a free history of changes.
 
 ### SHA-256
 **What it is:** a "fingerprint" function. Any file produces a fixed 64-character code, and changing even one character changes the code completely. **Why:** we store fingerprints with each saved lesson, so when it is replayed we can tell if any file was altered.
@@ -154,9 +154,6 @@ Node API (the waiter: checks and routes every request)
 
 ### Vercel and Railway
 **What they are:** services that host websites. Vercel hosts the website and small server functions; Railway can run our whole app from the Docker file. They are how the project could be put online.
-
-### GitHub Actions
-**What it is:** automation on GitHub. Here it checks each hackathon submission automatically.
 
 ### Playwright
 **What it is:** a tool that controls a real browser to test the app like a user would. Alongside it we have unit tests for the server code.

@@ -3,7 +3,6 @@
 | | |
 |---|---|
 | **Product** | Boardroom, the Executable Whiteboard |
-| **Event** | Craft N Code Karnataka 2026 (AI for Education) |
 | **Status** | Working prototype, deployed at https://board-of-c.vercel.app |
 | **Owner** | Boardroom team |
 
@@ -46,8 +45,8 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 | U6 | I run several inputs | Up to 20 cases with expected status/output, progress and first-mismatch report | Done |
 | U7 | I use teaching data structures | `stack.h`, `linked_list.h`, `queue.h`, `search.h` compile and report contract failures at the teacher's line | Done |
 | U8 | I learn what `malloc`/`free` did | Rule-based teaching notes appear for matching calls; comments and strings are ignored | Done |
-| U10 | I keep a record of every lesson | Each run creates a Git commit with board, source, input and replay bundle; History lists the latest 30 | Done |
-| U11 | I replay an old lesson | Frozen runner, vendored headers and SHA-256 manifest rebuild the run offline | Done |
+| U9 | I keep a record of every lesson | Each run creates a Git commit with board, source, input and replay bundle; History lists the latest 30 | Done |
+| U10 | I replay an old lesson | Frozen runner, vendored headers and SHA-256 manifest rebuild the run offline | Done |
 
 ## 5. Functional requirements
 
@@ -80,7 +79,7 @@ See the architecture diagram and deployment modes in [README section 5](../READM
 
 | Risk | Mitigation |
 |---|---|
-| OCR misreads handwriting | Mandatory review, alternates, scene fingerprint invalidation, typed fallback |
+| OCR misreads handwriting | Mandatory review, uncertainty flags, scene fingerprint invalidation, typed fallback |
 | Model "fixes" teacher errors | Prompt forbids repairs; compilation uses the confirmed text only |
 | Malicious code | Container isolation and resource limits; public use needs added authentication and stronger isolation |
 | Pretrained model misreads handwriting | Mandatory review, uncertainty flags, typed fallback; benchmark on classroom samples next |
@@ -98,5 +97,5 @@ See the architecture diagram and deployment modes in [README section 5](../READM
 
 | Horizon | Items |
 |---|---|
-| **Next month** | Fine-tune the OCR model on code handwriting; per-teacher accounts and shared rate limiting; stronger sandbox (gVisor/Firecracker); handwritten diagnostics with line boxes; plain C mode |
+| **Next month** | Fine-tune the OCR model on code handwriting; per-teacher accounts and rate limits shared across servers (per-visitor limits already exist); stronger sandbox (gVisor/Firecracker); handwritten diagnostics with line boxes; plain C mode |
 | **Later** | Student view and shared live sessions; more languages (Java); library versioning; teacher analytics on common errors |

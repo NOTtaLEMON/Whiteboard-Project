@@ -1,7 +1,5 @@
 # Boardroom: the Executable Whiteboard
 
-> **Craft N Code Karnataka 2026** · Theme: *AI for Education* · State qualifier for the Craft N Code National Hackathon at IIIT Bhubaneswar (organised by RV College of Engineering and RVITM)
-
 Boardroom turns a digital whiteboard into a live, verifiable coding classroom. A teacher writes or types C++ or Python on an [Excalidraw](https://excalidraw.com) canvas, selects the code region, supplies program input in blue ink, and runs it. The real compiler output, runtime errors and memory-safety reports appear next to the board and point back to the lines that caused them. No IDE switch is needed.
 
 **Live app:** https://board-of-c.vercel.app · **App source:** [`whiteboard-code-verifier/`](whiteboard-code-verifier/)
@@ -23,7 +21,6 @@ Boardroom turns a digital whiteboard into a live, verifiable coding classroom. A
 11. [AI tools and reused code](#11-ai-tools-and-reused-code)
 12. [Limits](#12-limits)
 13. [Repository layout and documentation](#13-repository-layout-and-documentation)
-14. [Hackathon submission](#14-hackathon-submission)
 
 ---
 
@@ -220,7 +217,6 @@ Every request gets a fresh container that is removed afterwards:
 | **Qwen2-VL on Hugging Face** (`Qwen/Qwen2-VL-2B-Instruct`) | Pretrained handwriting model; weights downloaded once (~4.5 GB), then run offline | `OCR_MODEL`, `OCR_SERVICE_URL` |
 | **Wandbox** | Hosted C++/Python execution when Docker is unavailable | `WANDBOX_API_URL`, `WANDBOX_CPP_COMPILER`, `WANDBOX_PYTHON_COMPILER` |
 | **GitHub (Git Data API)** | Persistent lesson archive in hosted mode | `SNAPSHOT_GITHUB_REPOSITORY`, `SNAPSHOT_GITHUB_BRANCH`, `SNAPSHOT_GITHUB_TOKEN` |
-| **GitHub Actions** | Automated submission check on pull requests | `.github/workflows/check-submission.yml` |
 | **Vercel** | Frontend hosting and serverless Functions (`api/`) | `vercel.json` |
 | **Railway** | Alternative container hosting | `railway.json`, `Dockerfile` |
 | **Caddy** (self-hosted option) | HTTPS reverse proxy in front of the Docker API | See [Docker API deployment](whiteboard-code-verifier/docs/docker-api-deployment.md) |
@@ -309,8 +305,6 @@ Open http://127.0.0.1:5173. Typed code works without the OCR service. See [ocr-s
 ├── docs/PRD.md                   Product requirements document
 ├── Dockerfile, railway.json      Container build and Railway deployment
 ├── deck/                         Pitch deck (.pptx) and generation scripts
-├── submissions/_TEMPLATE/        Hackathon submission template
-├── .github/                      PR template and submission-check workflow
 └── whiteboard-code-verifier/     The application
     ├── src/                      React UI, board extraction, capture, review
     ├── server/                   Node API, OCR client, sandbox, snapshots
@@ -334,37 +328,3 @@ Open http://127.0.0.1:5173. Typed code works without the OCR service. See [ocr-s
 | [Vercel deployment](whiteboard-code-verifier/docs/vercel-serverless.md) | Serverless setup |
 | [Docker API deployment](whiteboard-code-verifier/docs/docker-api-deployment.md) | VPS setup |
 | [Original notes](whiteboard-code-verifier.md) | Concept and design history |
-
-## 14. Hackathon submission
-
-| | |
-|---|---|
-| Event | Craft N Code Karnataka 2026, State qualifier for the national finals at IIIT Bhubaneswar |
-| Theme | AI for Education |
-| Mode and dates | Online, 48 hours, 17 to 18 October 2026 |
-| Deadline | 18 October 2026, 11:59 PM IST |
-| Eligibility | Students of colleges in Karnataka |
-
-**Submit as a pull request** with `submissions/<team-name>/submission.md` (copy from `submissions/_TEMPLATE/`). A GitHub Action checks it automatically.
-
-```bash
-git checkout -b <team-name>
-mkdir submissions/<team-name>
-cp submissions/_TEMPLATE/submission.md submissions/<team-name>/submission.md
-git add submissions/<team-name>
-git commit -m "Submission: <team-name>"
-git push -u origin <team-name>
-```
-
-| Item | Requirement |
-|---|---|
-| Code repository | Public GitHub link, commits made during the hackathon |
-| README | Problem and user, How it works, Data and AI used, How to run it, AI tools and reused code, Limits |
-| Demo video | 5:00 at most, YouTube or Google Drive with public view access |
-| Slides | Google Slides, 8 slides at most, public view access |
-| Deployed URL | Optional |
-| Short answers | Three mandatory questions in `submission.md` |
-
-**Scoring (100 points):** Impact and relevance 25 · Technical implementation 25 · Innovation and creativity 20 · Usability and responsible use 15 · Presentation and clarity 15.
-
-**Contacts:** Anika U Bhat (9113516891) · Varun Aditya (9880904610)
