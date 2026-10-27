@@ -66,7 +66,7 @@ The models only read and suggest; **GCC and the runtime tools decide**. The AI n
 
 ## 3. Product requirements (PRD)
 
-The full document is in **[docs/PRD.md](docs/PRD.md)**. Summary:
+The full document is in **[docs/PRD.md](docs/PRD.md)**, and a plain-language walkthrough of the whole project is in **[docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md)**. Summary:
 
 | | |
 |---|---|
@@ -324,6 +324,7 @@ Open http://127.0.0.1:5173. Typed code works without the OCR service. See [ocr-s
 
 | Document | Contents |
 |---|---|
+| [Project report](docs/PROJECT_REPORT.md) | Plain-language explanation of the PRD, the whole project, the tools used and the security measures |
 | [PRD](docs/PRD.md) | Requirements, scope, user stories, acceptance criteria |
 | [Application README](whiteboard-code-verifier/README.md) | Feature list and setup |
 | [Technical overview](whiteboard-code-verifier/docs/technical-overview.md) | Full architecture, limits, API reference |
