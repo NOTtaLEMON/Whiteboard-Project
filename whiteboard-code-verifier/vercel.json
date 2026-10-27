@@ -6,6 +6,7 @@
   "functions": {
     "api/snapshots.js": { "maxDuration": 60, "includeFiles": "{runner/runner.py,runner/lib/*.h,server/snapshot-replay.py}" },
     "api/ocr.js": { "maxDuration": 60 },
+    "api/snippet.js": { "maxDuration": 60 },
     "api/run.js": { "maxDuration": 30, "includeFiles": "runner/lib/*.h" }
   }
 }

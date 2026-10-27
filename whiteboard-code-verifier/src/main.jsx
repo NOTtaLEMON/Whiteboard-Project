@@ -103,6 +103,10 @@ function App() {
   const [snapshotRevision, setSnapshotRevision] = useState(0);
   const [automaticSnapshot, setAutomaticSnapshot] = useState('');
   const [edited, setEdited] = useState(null);
+  // Snippet mode (C++): the model adds only boilerplate, then the teacher confirms the program before it runs.
+  const [snippetMode, setSnippetMode] = useState(false);
+  const [snippetDraft, setSnippetDraft] = useState(null);
+  const [phase, setPhase] = useState('');
   const [editedBase, setEditedBase] = useState('');
   const [activeTool, setActiveToolState] = useState('selection');
   const [toolLocked, setToolLocked] = useState(false);
@@ -145,7 +149,9 @@ function App() {
   currentKey.current = runKey;
   const boardMovedOn = edited !== null && composed.source !== editedBase;
   const stale = result && result.key !== runKey;
-  const caseProgram = { ...program, source: runSource };
+  const needsPrepared = snippetMode && language === 'c' && !composed.drawing;
+  const currentDraft = snippetDraft?.originalKey === runKey ? snippetDraft : null;
+  const caseProgram = currentDraft && needsPrepared ? { ...program, source: currentDraft.source, lineMap: [] } : { ...program, source: runSource };
   const shownDiagnostics = result && !stale && !result.transformed ? result.diagnostics : [];
   const lesson = lessons.find((item) => item.id === lessonId);
   const selectedFrame = frames.find((frame) => frame.id === frameId);
@@ -279,7 +285,7 @@ function App() {
     ocrPanel.current?.readInput();
   }
 
-  async function run() {
+  async function run(confirmedSource) {
     if (!api || running || reading) return;
     setError('');
     setNotice('');
@@ -325,11 +331,35 @@ function App() {
       return data;
     }
     try {
+      // The teacher confirmed the prepared program shown in the panel: run exactly that text.
+      if (typeof confirmedSource === 'string') { await compile(confirmedSource, true); return; }
+      // Snippet mode: the model adds boilerplate only; nothing runs until the teacher confirms the result.
+      if (snippetMode && language === 'c' && !prepared.drawing) {
+        setPhase('prepare');
+        const draft = await requestJson('/api/snippet', { source: submitted.source, language }, 200_000);
+        if (!boardUnchanged()) throw new Error('The board changed. Prepare the program again for the current selection.');
+        setSnippetDraft({ ...draft, originalKey: submittedKey, confirmed: false });
+        return;
+      }
       // The board text is compiled exactly as written; a drawn linked list is the only thing turned into code.
       await compile(submitted.source, Boolean(prepared.drawing && edited === null));
     } catch (caught) {
       setError(caught.name === 'AbortError' ? 'The request timed out. Check the API and try again.' : caught.message);
-    } finally { setRunning(false); checkHealth(); }
+    } finally { setRunning(false); setPhase(''); checkHealth(); }
+  }
+
+  function confirmSnippet() {
+    if (!currentDraft || running || reading) return;
+    setSnippetDraft({ ...currentDraft, confirmed: true });
+    run(currentDraft.source);
+  }
+
+  function toggleSnippet() {
+    if (running || reading) return;
+    setSnippetDraft(null); setResult(null); setError('');
+    setNotice(snippetMode ? 'Full program mode: the code runs exactly as written.' :
+      'Snippet mode: the model adds only the boilerplate (includes, main, return). You confirm the program before it runs.');
+    setSnippetMode(!snippetMode);
   }
 
   function boardScene() {
@@ -693,12 +723,12 @@ function App() {
     });
   }
 
-  const runLabel = reading ? 'Reading handwriting…' : running ? language === 'python' ? 'Checking & running…' : 'Compiling & running…' : hasInk && !recognizedProgram ? codeReviewCurrent ? 'Scan & review input' : 'Read & review handwriting' : 'Verify & run';
-  const runDisabled = running || reading || !api || !frameId || !(hasInk && !recognizedProgram ? ocrHealth?.available : health?.available);
+  const runLabel = reading ? 'Reading handwriting…' : running ? phase === 'prepare' ? 'Preparing…' : language === 'python' ? 'Checking & running…' : 'Compiling & running…' : hasInk && !recognizedProgram ? codeReviewCurrent ? 'Scan & review input' : 'Read & review handwriting' : needsPrepared ? 'Prepare program' : 'Verify & run';
+  const runDisabled = running || reading || !api || !frameId || !(hasInk && !recognizedProgram ? ocrHealth?.available : health?.available) || (needsPrepared && !ocrHealth?.available);
 
   function changeLanguage(next) {
     if (next === language || running || reading) return;
-    setLanguage(next); setHealth(null); setConfirmedOcr(null); setError('');
+    setLanguage(next); setHealth(null); setConfirmedOcr(null); setSnippetDraft(null); setError('');
     setNotice(`${languageInfo(next).label} selected. Your writing is preserved; review any handwriting before running.`);
     if (api) clearOverlays(api);
   }
@@ -821,9 +851,13 @@ function App() {
                 <label className="sr-only" htmlFor="program-frame">PROGRAM FRAME</label>
                 <select id="program-frame" className="frame-select" value={frameId} title={lesson?.description} disabled={busy} onChange={(event) => changeFrame(event.target.value)}>{!frames.length && <option value="">No region yet</option>}{frames.map((frame, index) => <option key={frame.id} value={frame.id} title={frame.name || undefined}>Selected program #{index + 1}</option>)}</select>
               </div>
+              {language === 'c' && <div className="tool-group">
+                <button className="tool" aria-label="Snippet mode" aria-pressed={snippetMode} onClick={toggleSnippet} disabled={busy}
+                  title="Write only loose lines; the model adds includes, main and return, and you confirm the program before it runs"><Icon name="code" /><span className="tool-label">Snippet</span></button>
+              </div>}
               </div>
               <div className="tool-group tool-run">
-                <button className="run-button" onClick={run} disabled={runDisabled}><span className={busy ? 'spinner' : ''}>{!busy && <Icon name="play" size={18} />}</span>{runLabel}{!busy && <span className="run-button-hint" aria-hidden="true">{languageLabel} →</span>}</button>
+                <button className="run-button" onClick={() => run()} disabled={runDisabled}><span className={busy ? 'spinner' : ''}>{!busy && <Icon name="play" size={18} />}</span>{runLabel}{!busy && <span className="run-button-hint" aria-hidden="true">{languageLabel} →</span>}</button>
                 <button className="tool" aria-label={panelVisible ? 'Hide panel' : 'Show panel'} aria-pressed={panelVisible} onClick={() => setPanelVisible((visible) => !visible)}><Icon name="panel" /><span className="tool-label">Code</span></button>
               </div>
             </div>
@@ -879,10 +913,10 @@ function App() {
                   setNotice('Transcription confirmed. Use the run button to verify it.');
                 }}
               /></div>
-              <div hidden={tab !== 'cases'}><TestCases ref={casesPanel} key={language} program={caseProgram} signature={`${signature}:${caseProgram.source}`}
+              <div hidden={tab !== 'cases'}>{needsPrepared && <p className="panel-help">Prepare and confirm the program first. Cases then run that confirmed program until the code changes.</p>}<TestCases ref={casesPanel} key={language} program={caseProgram} signature={`${signature}:${caseProgram.source}`}
                 captureScene={boardScene} onCompiled={(scene, submitted, data) => saveCompilationSnapshot(scene,
                   { source: submitted.source, stdin: submitted.stdin, language: submitted.language, level: 1, kind: 'case', result: data })}
-                disabled={running || reading || !health?.available || !api || !frameId || !caseProgram.source.trim() || (hasInk && !recognizedProgram)} onBusy={setRunning} /></div>
+                disabled={running || reading || !health?.available || !api || !frameId || !caseProgram.source.trim() || (hasInk && !recognizedProgram) || (needsPrepared && !currentDraft?.confirmed)} onBusy={setRunning} /></div>
               {tab === 'history' && !snapshotAvailable && <p className="panel-help">{snapshotMessage}</p>}
               {tab === 'history' && snapshotAvailable && <SnapshotHistory key={snapshotRevision} onOpen={(scene) => {
                 const ink = restoreBoard(scene);
@@ -892,15 +926,25 @@ function App() {
               {tab === 'output' && <>
                 {stale && <div className="stale-notice">{edited !== null ? 'The code changed. Run again to update these results.' : 'The board changed. Run again to update these results.'}</div>}
                 {!result && !running && <div className="empty-state"><div className="terminal-glyph">&gt;_</div><h3>Let the code do the talking.</h3><p>Output appears here. Errors are underlined in the code above.</p><span>{language === 'python' ? 'Python interpreter' : 'C++ compiler'} · real output</span></div>}
-                {running && <div className="empty-state" role="status"><div className="terminal-glyph">…</div><h3>Testing the lesson</h3><p>Checking {languageLabel} and running the program.</p></div>}
+                {running && <div className="empty-state" role="status"><div className="terminal-glyph">…</div><h3>{phase === 'prepare' ? 'Preparing the program' : 'Testing the lesson'}</h3><p>{phase === 'prepare' ? 'The local model is adding the boilerplate. This can take up to a minute on a CPU.' : `Checking ${languageLabel} and running the program.`}</p></div>}
                 {result && <div aria-live="polite"><div className={`result-status ${result.status === 'success' ? 'passed' : 'failed'}`}><span>{result.status === 'success' ? '✓' : '!'}</span><strong>{labels[result.status] ?? result.status}</strong><small>{result.durationMs} ms</small></div>
                   <div className="terminal"><div className="terminal-title"><span>STDOUT</span><span>exit {result.exitCode ?? '—'}</span></div><pre>{result.stdout || '(no output)'}</pre></div>
                   {language === 'c' && <MemoryDiagram stdout={result.stdout} />}
-                  {result.transformed && <p className="panel-help">This output comes from the program built from your drawing. Diagnostic line numbers refer to that source.</p>}
+                  {result.transformed && <p className="panel-help">This output comes from the prepared program (built from your drawing or snippet). Diagnostic line numbers refer to that program.</p>}
                   {result.diagnostics.length > 0 && <div className="diagnostics"><h3>What the tools found</h3>{result.diagnostics.map((diagnostic, index) => <button key={index} className={`diagnostic ${diagnostic.severity}`} disabled={Boolean(stale) || result.transformed} onClick={() => focusDiagnostic(diagnostic)}><span className="line-number">L{diagnostic.line}</span><span><b>{diagnostic.kind} · {diagnostic.severity}</b>{diagnostic.message}</span><Icon name="arrow" size={14} /></button>)}</div>}
                   {result.notes.map((note) => <article className="teaching-note" key={note.title}><span className="eyebrow">TEACHING NOTE</span><h3>{note.title}</h3><p>{note.body}</p></article>)}
                   {(result.stderr || result.compilerOutput) && <details className="raw-output"><summary>Full compiler & runtime messages</summary><pre>{[result.compilerOutput, result.stderr].filter(Boolean).join('\n')}</pre></details>}
                 </div>}
+                {currentDraft && <section className="snippet-review" aria-label="Prepared program">
+                  <h3>Prepared program</h3>
+                  <p className="panel-help">The model added only the boilerplate. The app checked that each of your lines is still there, in order and unchanged, mistakes included. Read it, then confirm.</p>
+                  <pre className="library-source" aria-label="Prepared C++ program">{currentDraft.source}</pre>
+                  <div className="snippet-actions">
+                    <button className="quiet-button" onClick={confirmSnippet} disabled={running || reading || !health?.available}>{currentDraft.confirmed ? 'Run again' : 'Confirm & run'}</button>
+                    <button className="quiet-button" onClick={() => setSnippetDraft(null)} disabled={running || reading}>Discard</button>
+                  </div>
+                  <p className="ocr-provenance">{currentDraft.provider} · {currentDraft.model} · {currentDraft.durationMs} ms</p>
+                </section>}
               </>}
               {tab === 'library' && <div className="library-panel">
                 <label className="field-label" htmlFor="library-select">C++ LIBRARIES</label>

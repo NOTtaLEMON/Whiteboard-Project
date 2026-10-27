@@ -37,7 +37,7 @@ export function loadOcrEnvironment() {
 }
 
 // Read a JSON response body, refusing anything larger than the limit.
-async function readLimited(response, limit = 256 * 1024) {
+export async function readLimited(response, limit = 256 * 1024) {
   let size = 0;
   const chunks = [];
   for await (const chunk of response.body) {

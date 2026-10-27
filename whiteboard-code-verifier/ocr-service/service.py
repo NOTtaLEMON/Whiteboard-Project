@@ -104,6 +104,39 @@ def transcribe(image, channel):
              'uncertain': prob < UNCERTAIN_BELOW or '?' in text} for text, prob in lines]
 
 
+WRAP_PROMPT = (
+    "Below are loose lines of C++ written by a teacher. Add ONLY the boilerplate needed to make a complete program: "
+    "the #include lines for the standard headers the lines use, `using namespace std;` if the lines use unqualified std names, "
+    "an `int main() {` wrapper around the loose statements, `return 0;` and the closing brace. "
+    "Function, struct and class definitions stay at the top level, outside main. "
+    "Copy every one of the teacher's lines exactly, in the same order and with the same text, even if they contain mistakes. "
+    "Do NOT fix, rename, reformat, remove or complete anything. "
+    "Output only the finished program, with no explanation and no Markdown fences.\n\n"
+    "Example 1. The teacher's lines have a mistake (a missing semicolon after cin >> n); it must stay exactly as written.\n"
+    "Teacher's lines:\nint n;\ncin >> n\ncout << n * 2;\n"
+    "Program:\n#include <iostream>\nusing namespace std;\n\nint main() {\n    int n;\n    cin >> n\n    cout << n * 2;\n    return 0;\n}\n\n"
+    "Example 2. A function definition stays at the top level, outside main; the loose statements go inside main.\n"
+    "Teacher's lines:\nint twice(int x) { return x + x; }\ncout << twice(4);\n"
+    "Program:\n#include <iostream>\nusing namespace std;\n\nint twice(int x) { return x + x; }\n\nint main() {\n    cout << twice(4);\n    return 0;\n}\n\n"
+    "Now the real task. Copy every teacher's line exactly; add nothing else but boilerplate.\nTeacher's lines:\n"
+)
+MAX_SNIPPET_BYTES = 32 * 1024
+
+
+def wrap_snippet(source):
+    """Ask the model to add boilerplate around loose C++ lines. The caller verifies the lines were kept."""
+    torch, processor, model = load_model()
+    messages = [{'role': 'user', 'content': [{'type': 'text', 'text': WRAP_PROMPT + source}]}]
+    prompt = processor.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+    inputs = processor(text=[prompt], return_tensors='pt')
+    with torch.no_grad():
+        out = model.generate(**inputs, max_new_tokens=MAX_NEW_TOKENS * 2, do_sample=False)
+    ids = out[0][inputs['input_ids'].shape[1]:]
+    text = processor.tokenizer.decode(ids, skip_special_tokens=True)
+    lines = [line for line in text.replace('\r', '').split('\n') if not line.strip().startswith('```')]
+    return '\n'.join(lines).strip('\n') + '\n'
+
+
 def decode_png(encoded):
     try:
         data = base64.b64decode(encoded, validate=True)
@@ -133,7 +166,7 @@ class Handler(BaseHTTPRequestHandler):
         self._send(404, {'error': 'Not found.'})
 
     def do_POST(self):
-        if self.path != '/ocr':
+        if self.path not in ('/ocr', '/wrap'):
             return self._send(404, {'error': 'Not found.'})
         try:
             length = int(self.headers.get('Content-Length', '0'))
@@ -142,6 +175,12 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(length))
             if not isinstance(body, dict):
                 raise ValueError('Send a JSON object.')
+            if self.path == '/wrap':
+                source = body.get('source')
+                if not isinstance(source, str) or not source.strip() or len(source.encode()) > MAX_SNIPPET_BYTES or '\0' in source:
+                    raise ValueError('Send C++ source text of at most 32 KiB.')
+                with _lock:
+                    return self._send(200, {'source': wrap_snippet(source), 'model': MODEL_NAME})
             output = {'code': [], 'stdin': [], 'model': MODEL_NAME}
             with _lock:
                 for channel in ('code', 'stdin'):

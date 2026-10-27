@@ -175,6 +175,25 @@ test('OCR payload cap is independent of source cap and foreign origins are rejec
   assert.equal((await base('/api/ocr', { ...options, headers: { ...options.headers, Origin: 'https://unrelated.example' } })).status, 403);
 });
 
+test('snippet endpoint prepares a program without running it and shares the OCR limits', async (t) => {
+  let runs = 0;
+  let received;
+  const base = await start(t, {
+    run: async () => { runs += 1; },
+    prepare: async (body) => { received = body; return { source: `int main() {\n${body.source}\n}\n`, requiresConfirmation: true }; },
+  });
+  const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: 'puts("hi");', language: 'c' }) };
+  const response = await base('/api/snippet', options);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).requiresConfirmation, true);
+  assert.equal(received.source, 'puts("hi");');
+  assert.equal(runs, 0, 'preparing a snippet never executes it');
+  assert.equal((await base('/api/snippet', { ...options, headers: { 'Content-Type': 'text/plain' } })).status, 415);
+  assert.equal((await base('/api/snippet', { ...options, body: 'x'.repeat(65_537) })).status, 413);
+  for (let i = 0; i < 4; i++) assert.equal((await base('/api/snippet', options)).status, 200);
+  assert.equal((await base('/api/snippet', options)).status, 429, 'the per-visitor OCR budget (6 per minute) also covers snippets');
+});
+
 test('returns safe OCR diagnostics to the browser', async (t) => {
   const diagnostic = { provider: 'local-vlm', reason: 'timeout', httpStatus: null };
   const base = await start(t, { recognize: async () => {

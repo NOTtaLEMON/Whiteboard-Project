@@ -47,6 +47,7 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 | U8 | I learn what `malloc`/`free` did | Rule-based teaching notes appear for matching calls; comments and strings are ignored | Done |
 | U9 | I keep a record of every lesson | Each run creates a Git commit with board, source, input and replay bundle; History lists the latest 30 | Done |
 | U10 | I replay an old lesson | Frozen runner, vendored headers and SHA-256 manifest rebuild the run offline | Done |
+| U11 | I write only loose lines and the app adds the boilerplate | The model adds includes, main and return only; the app verifies each original line is kept in order and unchanged; the teacher confirms the prepared program before it runs | Done |
 
 ## 5. Functional requirements
 
@@ -55,6 +56,7 @@ Programming is taught on whiteboards, but whiteboard code is never run. Students
 | Canvas | Excalidraw whiteboard, frames, fullscreen, resizable side panel |
 | Extraction | Typed text read literally with blank lines and a line-to-element map; handwriting exported as separate code and stdin PNGs (max 2048 x 2048) |
 | OCR | Structured lines with uncertainty flags from a pretrained local model (Qwen2-VL); must not repair mistakes; teacher confirmation mandatory |
+| Snippet mode | C++ only. Qwen2-VL adds boilerplate around loose lines and never edits them; an automatic line-by-line check plus teacher confirmation precede execution |
 | Execution | g++ C++17 with `-fsanitize=address,undefined`, or Python 3, inside an isolated container |
 | Limits | 32 KiB source, 8 KiB stdin, 10 s compile, 5 s run, 16 KiB output |
 | Archive | Git commit per run, local or GitHub-backed, non-force pushes, retry sync |

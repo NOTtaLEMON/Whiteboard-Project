@@ -6,6 +6,7 @@ import { dirname, extname, resolve, sep } from 'node:path';
 import { sandboxHealth, runSandbox } from './sandbox.mjs';
 import { hostedRunnerHealth, runHostedProgram } from './hosted-runner.mjs';
 import { loadOcrEnvironment, ocrConfiguration, recognizeHandwriting, OCR_BODY_LIMIT } from './ocr.mjs';
+import { prepareSnippet, SNIPPET_BODY_LIMIT } from './snippet.mjs';
 import { libraries } from '../src/libraries.js';
 import { createSnapshotStore, SNAPSHOT_BODY_LIMIT } from './snapshots.mjs';
 import { validLanguage, languagePayload } from '../src/languages.js';
@@ -65,7 +66,7 @@ async function defaultRun(payload) {
 }
 
 export function createHandler({ run = defaultRun, health = defaultHealth, now = Date.now,
-  recognize = recognizeHandwriting, ocrHealth = ocrConfiguration, snapshots = createSnapshotStore(),
+  recognize = recognizeHandwriting, prepare = prepareSnippet, ocrHealth = ocrConfiguration, snapshots = createSnapshotStore(),
   appOrigin = process.env.BOARDROOM_APP_ORIGIN, apiHost = process.env.BOARDROOM_API_HOST } = {}) {
   let active = 0;
   let activeOcr = 0;
@@ -137,13 +138,14 @@ export function createHandler({ run = defaultRun, health = defaultHealth, now = 
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
         return res.end(header);
       }
-      if (pathname === '/api/ocr' && req.method === 'POST') {
+      if (['/api/ocr', '/api/snippet'].includes(pathname) && req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) return send(res, 415, { error: 'Use application/json.' });
         if (activeOcr >= 1) return send(res, 429, { error: 'An OCR request is already running. Try again shortly.' });
         if (!allowOcr(clientAddress(req))) return send(res, 429, { error: 'OCR request limit reached. Try again in a minute.' });
         activeOcr += 1;
         try {
-          return send(res, 200, await recognize(await requestBody(req, OCR_BODY_LIMIT)));
+          const snippet = pathname === '/api/snippet';
+          return send(res, 200, await (snippet ? prepare : recognize)(await requestBody(req, snippet ? SNIPPET_BODY_LIMIT : OCR_BODY_LIMIT)));
         }
         finally { activeOcr -= 1; }
       }

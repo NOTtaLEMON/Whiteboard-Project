@@ -79,7 +79,7 @@ The full document is in **[docs/PRD.md](docs/PRD.md)**, and a plain-language wal
 1. **Select code & input.** Drag a frame around existing writing. Black ink is source; blue (`#1971c2`) ink is stdin; other colours are annotations and are ignored.
 2. **Typed text bypasses OCR.** Typed elements are read literally, with blank lines preserved and a source-line-to-element map for diagnostics.
 3. **Handwriting goes through the local Qwen2-VL model, then through the teacher.** Code and stdin are exported as separate PNG crops. The transcription is shown line by line with uncertainty flags. The teacher must tick both confirmations before it can be used.
-4. **Run.** The runner compiles with `-std=c++17 -g -O0 -Wall -Wextra -fsanitize=address,undefined`, feeds stdin through a pipe and returns structured diagnostics. Code is run exactly as written; nothing is completed or corrected for the teacher.
+4. **Run.** The runner compiles with `-std=c++17 -g -O0 -Wall -Wextra -fsanitize=address,undefined`, feeds stdin through a pipe and returns structured diagnostics. Code is run exactly as written; nothing is completed or corrected for the teacher. **Snippet mode** (C++, optional): the teacher writes only loose lines, the local Qwen2-VL model adds the boilerplate (includes, `using namespace std;`, `int main() {`, `return 0;`, closing brace; helper functions stay outside `main`), the app checks that every original line is still there, in order and unchanged, and the teacher confirms the prepared program before it runs.
 5. **Snapshots and History.** Each completed run is archived; the History tab lists the latest 30 and restores the scene. Restored handwriting must be reviewed again.
 
 Full details: [Technical stack and project overview](whiteboard-code-verifier/docs/technical-overview.md).
@@ -247,7 +247,7 @@ pip install -r requirements.txt
 python service.py
 ```
 
-Open http://127.0.0.1:5173. Typed code works without the OCR service. See [ocr-service/README.md](whiteboard-code-verifier/ocr-service/README.md).
+Open http://127.0.0.1:5173. Typed code works without the OCR service; Snippet mode and handwriting both need it. See [ocr-service/README.md](whiteboard-code-verifier/ocr-service/README.md).
 
 | Command | Purpose |
 |---|---|
